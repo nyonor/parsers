@@ -7,7 +7,7 @@
  * Time: 20:35
  * Класс представляет из себя контейнер для хранения данных по 'спарсенной' шине
  */
-class TireModel
+class RivalTireModel
 {
 	/**
 	 * @var string
@@ -68,4 +68,14 @@ class TireModel
 	 * Технология Run Flat?
 	 */
 	public $runFlat;
+
+	/**
+	 * @var string
+	 */
+	public $site;
+
+	/**
+	 * @var string
+	 */
+	public $url;
 }

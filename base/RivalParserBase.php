@@ -10,20 +10,18 @@
  * Time: 20:00
  */
 
-require_once '../models/RivalTireModel.php';
-
 abstract class RivalParserBase {
     /**
      * @var $urlPattern string
      */
-    protected $urlPattern;
+    protected $_urlPattern;
 
     /**
      * @param $urlPattern string
      * Url сайта для парсинга
      */
     public function __construct($urlPattern) {
-        $this->$urlPattern = $urlPattern;
+        $this->_urlPattern = $urlPattern;
     }
 
     /**

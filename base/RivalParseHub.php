@@ -12,10 +12,6 @@
  * Time: 10:43
  */
 
-//настроим выполнение
-require_once "../include.php";
-require_once "../base/RivalParserBase.php";
-
 //некоторые константы
 define ("NODE_VAR_NAME", "node");
 define ("PATH_TO_PARSED_FILES", "/files");
@@ -26,17 +22,17 @@ class RivalParseHub {
 	/**
 	 * @var string путь к файлу с данными результатов парсинга
 	 */
-    protected $jsonSwapFilePath;
+    protected $_jsonSwapFilePath;
 
     /**
      * @var StdClass[]
      */
-    protected $swapFileContentArray;
+    protected $_swapFileContentArray;
 
     /**
      * @var RivalParserBase
      */
-    protected $currentParser;
+    protected $_currentParser;
 
 	/**
 	 * @param int $scriptMaxExecutionTime
@@ -47,12 +43,14 @@ class RivalParseHub {
 
     }
 
-	/**
+    /**
      * Установка парсера - он содержит всю логику парсинга!
      * @param RivalParserBase $parser
+     * @return $this
      */
     public function InjectParser(RivalParserBase $parser) {
-        $this->currentParser = $parser;
+        $this->_currentParser = $parser;
+        return $this;
     }
 
 	/**
@@ -81,6 +79,13 @@ class RivalParseHub {
 
     }
 
+    public function ProcessParsedDataFromInjectedParserToDB() {
+        $parsedModel[] = $this->_currentParser->Parse();die;
+        foreach($parsedModel as $key => $rivalTireModel) {
+            $this->StoreObjectToDB($rivalTireModel);
+        }
+    }
+
 	/**
 	 * Считывание файла c json данными парсинга
 	 * @param string $fileName
@@ -93,17 +98,17 @@ class RivalParseHub {
         }
 
         // преобразуем файл свопа в массив объектов с данными
-        $this->jsonSwapFilePath = getcwd() . PATH_TO_PARSED_FILES . $fileName;
-        $fileContent = file_get_contents($this->jsonSwapFilePath, true);
-        $this->swapFileContentArray = json_decode($fileContent);
+        $this->_jsonSwapFilePath = getcwd() . PATH_TO_PARSED_FILES . $fileName;
+        $fileContent = file_get_contents($this->_jsonSwapFilePath, true);
+        $this->_swapFileContentArray = json_decode($fileContent);
 
-        return $this->swapFileContentArray;
+        return $this->_swapFileContentArray;
     }
 
     //todo нет проверки типа и остатков, пишется в таблицу с шинами...
 	/**
 	 * Процедура проверок и сохранения результатов парсинга в БД
-	 * @param StdClass $object
+	 * @param StdClass | RivalTireModel $object
 	 */
     protected function StoreObjectToDB($object) {
         $insertSql =
