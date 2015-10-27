@@ -19,6 +19,12 @@ define ("PATH_TO_PARSED_FILES", "/files");
 
 class RivalParseHub {
 
+    /**
+     * Если установлен в true, то хаб будет сначала обновлять номенклатуру и лишь затем выполнять парсинг
+     * @var bool
+     */
+    public $shouldUpdateProductsBeforeParsingResults = true;
+
 	/**
 	 * @var string путь к файлу с данными результатов парсинга
 	 */
@@ -34,13 +40,58 @@ class RivalParseHub {
      */
     protected $_currentParser;
 
+    /**
+     * @var IDbController
+     */
+    protected $_dbController;
+
+    /**
+     * @var IProductsUpdater
+     */
+    protected $_productsUpdater;
+
+    /**
+     * @var RivalTireModel[]
+     */
+    protected $_lastParseResults;
+
 	/**
 	 * @param int $scriptMaxExecutionTime
 	 */
     public function __construct($scriptMaxExecutionTime = 0) {
 
         set_time_limit($scriptMaxExecutionTime); //парсинг обычно выполняется не быстро
+    }
 
+    //todo делаю
+    public function GetComparingResultAsCsv($rivalSiteUrl) {
+
+        //echo "HI!";
+        $subjectResults = $this->_lastParseResults;
+        if ($subjectResults == null) {
+            //throw new Exception("No parsed results!"); //todo достать из базы
+            //echo "here";die;
+            $subjectResults = $this->_dbController->FindParsedResultsBySiteUrl($rivalSiteUrl);
+            //var_dump($subjectResults);
+        }
+
+        // echo "2";die;
+        foreach($subjectResults as $rivalModel) {
+            //var_dump($rivalModel);
+            $this->_dbController->FindInProducts($rivalModel);
+        }
+
+    }
+
+    /**
+     * Для получения экземпляра IProductsUpdater используй этот метод!
+     * @return IProductsUpdater|ProductsUpdater
+     */
+    public function GetProductsUpdater() {
+        if ($this->_productsUpdater == null) {
+            $this->_productsUpdater = new ProductsUpdater($this->_dbController);
+        }
+        return $this->_productsUpdater;
     }
 
     /**
@@ -49,7 +100,30 @@ class RivalParseHub {
      * @return $this
      */
     public function InjectParser(RivalParserBase $parser) {
+        //todo проверить что объект реализуют необходимый интерфейс или наследуется от нужного класса
         $this->_currentParser = $parser;
+        return $this;
+    }
+
+	/**
+	 * Объект будет использоваться для работы с БД
+	 * @param IDbController $controller
+	 * @return $this
+	 */
+    public function InjectDBController(IDbController $controller) {
+		//todo проверить что объект реализуют необходимый интерфейс
+		$this->_dbController = $controller;
+		return $this;
+    }
+
+    /**
+     * Объект будет использоваться для обновления номенклатуры (нашей)
+     * @param IProductsUpdater $productsUpdater
+     * @return $this
+     */
+    public function InjectProductsUpdater(IProductsUpdater $productsUpdater) {
+        //todo проверить что объект реализуют необходимый интерфейс
+        $this->_productsUpdater = $productsUpdater;
         return $this;
     }
 
@@ -66,6 +140,7 @@ class RivalParseHub {
 	/**
 	 * Обработка файла с json данными парсинга
 	 * @param string $fileName
+     * todo в принципе пока не используется, перед использованием проверить функциональность!
 	 */
     public function ProcessParsedDataFromFileToDB($fileName) {
 
@@ -79,11 +154,32 @@ class RivalParseHub {
 
     }
 
+    /**
+     * Выполняет парсинг и обработку результатов, это основной метод для работы
+     * @throws Exception
+     */
     public function ProcessParsedDataFromInjectedParserToDB() {
-        $parsedModel[] = $this->_currentParser->Parse();die;
+        //обновим номенклатуру если свойство == true
+        if ($this->shouldUpdateProductsBeforeParsingResults) {
+            $pu = $this->GetProductsUpdater();
+            $pu->UpdateProducts();
+        }
+
+        $parsedModel = $this->_currentParser->Parse($this->_dbController);
+
+        $this->_lastParseResults = $parsedModel;
+
+		echo count($parsedModel);
+
+		if (count($parsedModel) > 0) {
+			$this->_dbController->TruncateOldParseResult($this->_currentParser->GetSiteToParseUrl());
+		}
+
         foreach($parsedModel as $key => $rivalTireModel) {
             $this->StoreObjectToDB($rivalTireModel);
         }
+
+        return $this;
     }
 
 	/**
@@ -105,11 +201,19 @@ class RivalParseHub {
         return $this->_swapFileContentArray;
     }
 
-    //todo нет проверки типа и остатков, пишется в таблицу с шинами...
 	/**
-	 * Процедура проверок и сохранения результатов парсинга в БД
-	 * @param StdClass | RivalTireModel $object
+	 * Сохраняем результат парсинга
+	 * @param $object RivalTireModel | StdClass
+	 * @throws Exception
 	 */
+	protected function StoreObjectToDB($object) {
+		if ($this->_dbController == null)
+			throw new Exception("IDbController should be injected to RivalParserHub!");
+		$this->_dbController->AddParsingResult($object);
+    }
+
+    //todo нет проверки типа и остатков, пишется в таблицу с шинами...
+	/*
     protected function StoreObjectToDB($object) {
         $insertSql =
 			"INSERT INTO tyres SET
@@ -168,5 +272,5 @@ class RivalParseHub {
         //die;
 
         //if ($result)
-    }
+    }*/
 }

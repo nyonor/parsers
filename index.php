@@ -7,6 +7,13 @@
  * Time: 16:42
  */
 
+$mongo = new MongoClient();
+$collection = $mongo->selectCollection("RivalParsingDB", "RivalParsedResults");
+$collection->insert(['field1' => 'value1']);
+
+print_r($collection);die;
+
+
 ini_set("display_errors", 1);
 ini_set("track_errors", 1);
 ini_set("html_errors", 1);
