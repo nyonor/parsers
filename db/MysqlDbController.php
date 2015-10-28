@@ -116,22 +116,26 @@ class MysqlDbController implements IDbController
 
 	/**
 	 * Поиск и сопоставление товара в нашей номенклатуре
-	 * @param RivalTireModel $rivalModel
-	 * @return ProductTireModel[]|StdClass[]
+	 * @param $rivalModel RivalTireModel
+	 * @return ComparisonResult | null
 	 */
 	function FindInProducts($rivalModel)
 	{
 		//ищем
-		$selectSql = "SELECT * FROM Products WHERE
+		$selectSql = "SELECT *, MATCH(model) AGAINST(:model) as 'relevance'
+						FROM Products WHERE
 						brand = :brand AND
-						model = :model AND
+						MATCH(model) AGAINST(:model) AND
 						width = :width AND
 						height = :height AND
 						constructionType = :constructionType AND
 						diameter = :diameter AND
 						loadIndex = :loadIndex AND
 						speedIndex = :speedIndex AND
-						productType = :productType"; //todo season! runflat!
+						productType = :productType AND
+						season = :season AND
+						runFlat = :runFlat
+						ORDER BY relevance DESC, length(model) DESC"; //todo season! runflat!
 
 		//если подготовленного выражения нет, то добавим его по ключу
 		if ($this->GetPreparedStatementByKey(self::PREPARED_STATEMENT_FOR_SELECT) == null) {
@@ -151,32 +155,42 @@ class MysqlDbController implements IDbController
 		$statement->bindParam(':diameter', $rivalModel->diameter);
 		$statement->bindParam(':loadIndex', $rivalModel->loadIndex);
 		$statement->bindParam(':speedIndex', $rivalModel->speedIndex);
+		$statement->bindParam(':season', $rivalModel->season);
+		$statement->bindParam(':runFlat', $rivalModel->runFlat);
+		$statement->bindValue(':productType', "tire");
 
-		$productType = "tire";
-		$statement->bindParam(':productType', $productType);
-		//$statement->bindParam(':season', $model->season);
-		//$statement->bindParam(':runFlat', $model->runFlat);
-
+		//выполняем
 		if ($statement->execute()) {
 			//$statement->debugDumpParams();
 			//echo "<br/>".$statement->rowCount();
-			echo "Looking FOR <br/>";
-			var_dump($rivalModel);
+			//echo "Looking FOR <br/>";
+			//var_dump($rivalModel);
 			//var_dump($statement->queryString);
-			while($productModel = $statement->fetchObject('ProductTireModel')) {
-				echo "Found !!!<br/>";
-				var_dump($productModel);
-				//die;
+			/**
+			 * @var $productModel ComparisonResult
+			 */
+			$productModel = $statement->fetchObject('ComparisonResult');
+
+			/* если название моделей не совпадает то установим свойство в true
+			 * в последствии его можно будет использовать в выгрузке или
+			 * для формирования таблицы с правилами
+			 */
+			if ($productModel != null && strcasecmp($rivalModel->model, $productModel->model) != 0) {
+				$productModel->shouldCheckByOperator = true;
 			}
-			echo "<br/><br/>";
-			//die;
+			else if ($productModel != null) {
+				$productModel->shouldCheckByOperator = false;
+			}
+
+			if($productModel != null) {
+				$productModel->rivalModel = $rivalModel;
+				return $productModel;
+			} else {
+				//TODO: если не нашли то записать в таблицу не найденных? Нужно ли нам хранить историю парсинга? Или очищать предыдущие результаты каждый раз при новом парсинге ресурса?
+			}
 		}
 
-		//если не нашли то todo записать в таблицу не найденных? Нужно ли нам хранить историю парсинга? Или очищать предыдущие результаты каждый раз при новом парсинге ресурса?
-
-		//возвращаем найденное
-
-		$this->_lastPreparedStatementsArray = null;
+		return null;
 	}
 
 	/**
@@ -200,5 +214,9 @@ class MysqlDbController implements IDbController
 	{
 		//$selectQuery = ""
 		//TODO: Implement GetAllBrands
+	}
+
+	function __destruct() {
+		$this->_lastPreparedStatementsArray = null;
 	}
 }

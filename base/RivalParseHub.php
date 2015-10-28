@@ -75,11 +75,16 @@ class RivalParseHub {
             //var_dump($subjectResults);
         }
 
-        // echo "2";die;
+        $results = [];
         foreach($subjectResults as $rivalModel) {
             //var_dump($rivalModel);
-            $this->_dbController->FindInProducts($rivalModel);
+            $comparisonRes = $this->_dbController->FindInProducts($rivalModel);
+
+            if ($comparisonRes != null)
+                $results[] = $comparisonRes;
         }
+
+        var_dump($results);
 
     }
 

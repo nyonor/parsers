@@ -192,6 +192,7 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 		$seasonName = null;
 		if ($seasonModel != null)
 			$seasonName = $seasonModel->GetSeasonName();
+		//var_dump($seasonModel);
 		return $seasonName;
 	}
 

@@ -45,7 +45,7 @@ class ProductsUpdater implements IProductsUpdater
 			$productTireModel->height = strtolower((string)$productXml->height);
 			$productTireModel->loadIndex = strtolower((string)$productXml->load_index);
 			$productTireModel->speedIndex = strtolower((string)$productXml->speed_index);
-			$productTireModel->runFlat = strtolower((boolean)$productXml->streghtening);
+			$productTireModel->runFlat = (string)$productXml->puncture != null && (string)$productXml->puncture != ' ';
 			$results[] = $productTireModel;
 			//break;
 

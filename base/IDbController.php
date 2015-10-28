@@ -32,7 +32,7 @@ interface IDbController
 	/**
 	 * Поиск и сопоставление товара в нашей номенклатуре
 	 * @param $rivalTireModel RivalTireModel
-	 * @return ProductTireModel[]|StdClass[]
+	 * @return ComparisonResult | null
 	 */
 	function FindInProducts($rivalTireModel);
 

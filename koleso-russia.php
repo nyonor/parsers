@@ -17,6 +17,7 @@ require_once 'parsers/KolesoRussiaParser.php';
 require_once 'models/TireModel.php';
 require_once 'models/RivalTireModel.php';
 require_once 'models/ProductTireModel.php';
+require_once 'models/ComparisonResult.php';
 require_once 'models/SeasonModel.php';
 require_once 'db/MongoDbController.php';
 require_once 'db/MysqlDbController.php';
@@ -24,12 +25,6 @@ require_once 'base/IProductsUpdater.php';
 require_once 'base/ProductsUpdater.php';
 require __DIR__ . '/vendor/autoload.php';
 
-//$productsUpdater = new ProductsUpdater(new MysqlDbController());
-//$productsUpdater->UpdateProducts();
-
-//die;
-
-//header('Content-Type: text/html; charset=windows-1251');
 header('Content-Type: text/html; charset=utf-8');
 
 $urlPattern = "http://www.koleso-russia.ru/catalog/search/tires/bysize/?PAGEN_1=%d&AJAX=Y";
@@ -37,8 +32,7 @@ $urlPattern = "http://www.koleso-russia.ru/catalog/search/tires/bysize/?PAGEN_1=
 $hub = new RivalParseHub();
 //$hub->ExecuteNodeJsScript("js/nodeJsKolesoRussia.js");
 //$hub->ProcessParsedDataFromFileToDB("kolesoRussiaSwapFile.txt");
-$hub->shouldUpdateProductsBeforeParsingResults = true;
-//echo "1";die;
+$hub->shouldUpdateProductsBeforeParsingResults = false;
 $hub->InjectParser(new KolesoRussiaParser($urlPattern))
 	->InjectDBController(new MysqlDbController())
 	->ProcessParsedDataFromInjectedParserToDB()
