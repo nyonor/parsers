@@ -12,10 +12,13 @@ class MysqlDbController implements IDbController
 	const MYSQL_DSN = "mysql:host=localhost;dbname=4tochki;charset=utf8";
 	const MYSQL_USER_LOGIN = "mysqlUser";
 	const MYSQL_PASSWORD = "iddqd";
-	const PREPARED_STATEMENT_FOR_SELECT = "prepStForSel";
+	const KEY_PREPARED_STATEMENT_SELECT_MATCH_PARSED_IN_PRODUCTS = "prepStForSel";
+	const KEY_PREPARED_STATEMENT_INSERT_PARSED_RESULT = "prepStForIns";
+	const KEY_PREPARED_STATEMENT_INSERT_LINK_PRODUCTS_TO_PARSED_RESULT = "prepStForLink";
+	const KEY_PREPARED_STATEMENT_SELECT_COMPARED_BY_PARSED = "prepStSelComparedByParsed";
 
 	protected $_db;
-	protected $_lastPreparedStatementsArray;
+	protected $_lastPreparedStatementsArray = [];
 
 	public function __construct() {
 		$this->_db = new PDO(self::MYSQL_DSN, self::MYSQL_USER_LOGIN, self::MYSQL_PASSWORD,array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
@@ -32,18 +35,27 @@ class MysqlDbController implements IDbController
 
 	/**
 	 * @param $objectToInsert RivalTireModel | StdClass
-	 * todo НЕ правильно сделал подготовленный инсерт!
 	 */
 	function AddParsingResult($objectToInsert)
 	{
 		$insertQuery = "INSERT INTO 4tochki.RivalParsedResults
 				  (`brand`, `model`, `width`, `height`, `constructionType`, `diameter`,
-				  `loadIndex`, `speedIndex`, `season`, `runFlat`, `site`, `url`, `price`)
+				  `loadIndex`, `speedIndex`, `season`, `runFlat`, `site`, `url`, `price`, `quantity`)
 				  VALUES (:brand, :model, :width, :height, :constructionType, :diameter,
-				  :loadIndex, :speedIndex, :season, :runFlat, :site, :url, :price)";
+				  :loadIndex, :speedIndex, :season, :runFlat, :site, :url, :price, :quantity)";
 
 		$db = $this->_db;
-		$statement = $db->prepare($insertQuery);
+
+		//если подготовленного выражения нет, то добавим его по ключу
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_INSERT_PARSED_RESULT) == null) {
+			$statement = $db->prepare($insertQuery);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_INSERT_PARSED_RESULT, $statement);
+		}
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_INSERT_PARSED_RESULT);
 
 		$statement->bindParam(':brand',$objectToInsert->brand);
 		$statement->bindParam(':model',$objectToInsert->model);
@@ -57,38 +69,44 @@ class MysqlDbController implements IDbController
 		$statement->bindParam(':runFlat',$objectToInsert->runFlat);
 		$statement->bindParam(':site',$objectToInsert->site);
 		$statement->bindParam(':url',$objectToInsert->url);
-		$statement->bindParam(':price', $objectToInsert->price); //todo PRICE!!!
+		$statement->bindParam(':price', $objectToInsert->price);
+		$statement->bindParam(':quantity', $objectToInsert->quantity);
 
 		$statement->execute();
 	}
 
 	function TruncateOldParseResult($siteUrl) {
+		$deleteQuery = "DELETE FROM RivalParsedResulstToProducts
+						WHERE RivalParsedResulstToProducts.rivalParsedResultsId
+							IN (SELECT id FROM RivalParsedResults WHERE site = '".$siteUrl."')";
+		$this->_db->query($deleteQuery)->execute();
 		$deleteQuery = "DELETE FROM RivalParsedResults WHERE site = '".$siteUrl."'";
-		echo $deleteQuery;
 		$this->_db->query($deleteQuery)->execute();
 	}
 
 	/**
+	 * Очищение старой номенклатуры
 	 * @return null
 	 */
 	function TruncateOldProductsData()
 	{
-		// TODO: Implement TruncateOldProductsData() method.
+		$deleteQuery = "DELETE FROM Products";
+		$this->_db->query($deleteQuery)->execute();
 	}
 
 
 	/**
 	 * Добавляет нашу номенклатуру в бд
-	 * @param $objectToInsert ProductTireModel[] | StdClass[] | ProductTireModel | StdClass
+	 * @param $objectToInsert ProductTireModel[] | StdClass[]
 	 * @return mixed
 	 */
-	function AddProductsData($objectToInsert)
+	function AddProducts($objectToInsert)
 	{
 		$insertQuery = "INSERT INTO 4tochki.Products
 				  (`cae`,`brand`, `model`, `width`, `height`, `constructionType`, `diameter`,
 				  `loadIndex`, `speedIndex`, `season`, `runFlat`)
 				  VALUES (:cae, :brand, :model, :width, :height, :constructionType, :diameter,
-				  :loadIndex, :speedIndex, :season, :runFlat)"; //todo PRICE!!!
+				  :loadIndex, :speedIndex, :season, :runFlat)";
 
 		if (is_array($objectToInsert)) {
 
@@ -115,16 +133,89 @@ class MysqlDbController implements IDbController
 	}
 
 	/**
-	 * Поиск и сопоставление товара в нашей номенклатуре
+	 * Поиск в таблице сравнений
+	 * @param $siteUrl string
+	 * @return CsvViewModel[] | boolean
+	 */
+	function FindInComparedByUrl($siteUrl)
+	{
+		$selectQuery = "SELECT products.cae, parsed.price, compared.shouldCheckByOperator, parsed.quantity
+						FROM 4tochki.RivalParsedResulstToProducts as compared
+						LEFT JOIN Products as products on products.cae = compared.productCae
+						LEFT JOIN RivalParsedResults as parsed on parsed.id = compared.rivalParsedResultsId
+						WHERE
+						parsed.site = '".$siteUrl."'";
+
+		$res = $this->_db->query($selectQuery)->fetchAll(PDO::FETCH_CLASS, 'ComparisonResult');
+		//var_dump($res);die;
+		return $res;
+	}
+
+	/**
+	 * Точный поиск в таблице сравнений
+	 * @param $rivalModel RivalTireModel
+	 * @return mixed
+	 */
+	function FindInComparedByRivalModel($rivalModel) {
+
+		$selectQuery = "SELECT products.cae, parsed.price, compared.shouldCheckByOperator, parsed.quantity
+						FROM 4tochki.RivalParsedResulstToProducts as compared
+						LEFT JOIN Products as products on products.cae = compared.productCae
+						LEFT JOIN RivalParsedResults as parsed on parsed.id = compared.rivalParsedResultsId
+						WHERE
+						parsed.brand = :brand AND
+						parsed.model = :model AND
+						parsed.width = :width AND
+						parsed.height = :height AND
+						parsed.constructionType = :constructionType AND
+						parsed.diameter = :diameter AND
+						parsed.loadIndex = :loadIndex AND
+						parsed.speedIndex = :speedIndex AND
+						parsed.productType = :productType AND
+						parsed.season = :season AND
+						parsed.runFlat = :runFlat";
+
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_COMPARED_BY_PARSED);
+
+		if ($statement == null) {
+			$statement = $this->_db->prepare($selectQuery);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_COMPARED_BY_PARSED, $statement);
+		}
+
+		$statement->bindParam(':brand', $rivalModel->brand);
+		$statement->bindParam(':model', $rivalModel->model);
+		$statement->bindParam(':width', $rivalModel->width);
+		$statement->bindParam(':height', $rivalModel->height);
+		$statement->bindParam(':constructionType', $rivalModel->constructionType);
+		$statement->bindParam(':diameter', $rivalModel->diameter);
+		$statement->bindParam(':loadIndex', $rivalModel->loadIndex);
+		$statement->bindParam(':speedIndex', $rivalModel->speedIndex);
+		$statement->bindParam(':season', $rivalModel->season);
+		$statement->bindParam(':runFlat', $rivalModel->runFlat);
+		$statement->bindValue(':productType', "tire"); //todo а если диски?
+
+		if ($statement->execute()) {
+
+			$result = $statement->fetchObject('CsvViewModel');
+			return $result;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Сопоставление спарсенного к нашей номенклатуре
 	 * @param $rivalModel RivalTireModel
 	 * @return ComparisonResult | null
 	 */
-	function FindInProducts($rivalModel)
+	function CompareWithProducts($rivalModel)
 	{
+		//var_dump($rivalModel);
 		//ищем
-		$selectSql = "SELECT *, MATCH(model) AGAINST(:model) as 'relevance'
+		$selectSql = "SELECT *, MATCH(model) AGAINST(:model) as 'relevanceModel',
+						MATCH (brand) AGAINST (:brand) as 'relevanceBrand'
 						FROM Products WHERE
-						brand = :brand AND
+						MATCH (brand) AGAINST (:brand) AND
 						MATCH(model) AGAINST(:model) AND
 						width = :width AND
 						height = :height AND
@@ -135,20 +226,31 @@ class MysqlDbController implements IDbController
 						productType = :productType AND
 						season = :season AND
 						runFlat = :runFlat
-						ORDER BY relevance DESC, length(model) DESC"; //todo season! runflat!
+						ORDER BY relevanceBrand DESC, relevanceModel DESC, length(model) DESC";
 
 		//если подготовленного выражения нет, то добавим его по ключу
-		if ($this->GetPreparedStatementByKey(self::PREPARED_STATEMENT_FOR_SELECT) == null) {
-			$this->SetPreparedStatementByKey(self::PREPARED_STATEMENT_FOR_SELECT, $this->_db->prepare($selectSql));
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_MATCH_PARSED_IN_PRODUCTS) == null) {
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_MATCH_PARSED_IN_PRODUCTS, $this->_db->prepare($selectSql));
 		}
 
 		/**
 		 * @var $statement PDOStatement
 		 */
-		$statement = $this->GetPreparedStatementByKey(self::PREPARED_STATEMENT_FOR_SELECT);
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_MATCH_PARSED_IN_PRODUCTS);
 
-		$statement->bindParam(':brand', $rivalModel->brand);
-		$statement->bindParam(':model', $rivalModel->model);
+		$modelParam = $rivalModel->model;
+
+		//надстройка полнотекстового поиска
+		/*$modelParamExploded = explode(' ',$rivalModel->model);
+		foreach($modelParamExploded as $key => $word) {
+			//$modelParamExploded[$key] = '+"'.$word.'"';
+			$modelParamExploded[$key] = '*'.$word.'*';
+		}
+		$modelParam = implode(' ',$modelParamExploded);*/
+		//var_dump($modelParam);
+
+		$statement->bindValue(':brand', $rivalModel->brand);
+		$statement->bindParam(':model', $modelParam);
 		$statement->bindParam(':width', $rivalModel->width);
 		$statement->bindParam(':height', $rivalModel->height);
 		$statement->bindParam(':constructionType', $rivalModel->constructionType);
@@ -161,29 +263,50 @@ class MysqlDbController implements IDbController
 
 		//выполняем
 		if ($statement->execute()) {
-			//$statement->debugDumpParams();
-			//echo "<br/>".$statement->rowCount();
-			//echo "Looking FOR <br/>";
-			//var_dump($rivalModel);
-			//var_dump($statement->queryString);
 			/**
 			 * @var $productModel ComparisonResult
 			 */
-			$productModel = $statement->fetchObject('ComparisonResult');
+			$result = $statement->fetchObject('ComparisonResult');
 
-			/* если название моделей не совпадает то установим свойство в true
+			if ($result != null) {
+				$productModel = $result;
+			} else {
+				$productModel = new ComparisonResult();
+			}
+
+			//var_dump($cr);
+
+			/* если название моделей или брендов не совпадает то установим свойство в true
 			 * в последствии его можно будет использовать в выгрузке или
 			 * для формирования таблицы с правилами
 			 */
-			if ($productModel != null && strcasecmp($rivalModel->model, $productModel->model) != 0) {
+			if ($productModel != null && (strcasecmp($rivalModel->model, $productModel->model) != 0
+					|| strcasecmp($rivalModel->brand, $productModel->brand) != 0)) {
 				$productModel->shouldCheckByOperator = true;
 			}
-			else if ($productModel != null) {
+			else if ($productModel != null ) {
 				$productModel->shouldCheckByOperator = false;
 			}
 
 			if($productModel != null) {
 				$productModel->rivalModel = $rivalModel;
+				//var_dump($productModel);
+
+				//var_dump($rivalModel);
+
+				//сделаем запись в таблице связей
+				if ($productModel->cae != null) {
+					try {
+						$this->LinkParsedResultToProduct
+						($rivalModel->id, $productModel->cae, $productModel->relevanceModel, $productModel->relevanceBrand,
+							$productModel->shouldCheckByOperator);
+					} catch(PDOException $e) {
+						//на таблице висит констрэйнт UNIQUE
+					} catch (Exception $e) {
+						echo $e;
+					}
+
+				}
 				return $productModel;
 			} else {
 				//TODO: если не нашли то записать в таблицу не найденных? Нужно ли нам хранить историю парсинга? Или очищать предыдущие результаты каждый раз при новом парсинге ресурса?
@@ -194,12 +317,50 @@ class MysqlDbController implements IDbController
 	}
 
 	/**
+	 * Связывает результаты сопоставления в соответствии с релевантностью
+	 * @param $parsedResultId int
+	 * @param $productCae string
+	 * @param $relevanceModel float
+	 * @param $relevanceBrand float
+	 * @param $shouldCheckByOperator
+	 * @return mixed
+	 */
+	function LinkParsedResultToProduct($parsedResultId, $productCae, $relevanceModel, $relevanceBrand, $shouldCheckByOperator)
+	{
+		//echo $parsedResultId;
+		if ($this->GetPreparedStatementByKey
+			(self::KEY_PREPARED_STATEMENT_INSERT_LINK_PRODUCTS_TO_PARSED_RESULT) == null) {
+			$insertQuery = "INSERT INTO RivalParsedResulstToProducts
+							(rivalParsedResultsId, productCae, relevanceModel, relevanceBrand, shouldCheckByOperator)
+							VALUES
+							(:rivalParsedResultId, :productCae, :relevanceModel, :relevanceBrand, :shouldCheckByOperator)";
+			$statement = $this->_db->prepare($insertQuery);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_INSERT_LINK_PRODUCTS_TO_PARSED_RESULT,
+				$statement);
+		}
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		$statement = $this->GetPreparedStatementByKey
+		(self::KEY_PREPARED_STATEMENT_INSERT_LINK_PRODUCTS_TO_PARSED_RESULT);
+
+		//echo "<br/><br/>" . $parsedResultId . " " . $productCae . " " . $relevance . "<br/><br/>";
+		//return;
+		$statement->bindValue(':rivalParsedResultId', $parsedResultId);
+		$statement->bindValue(':productCae', $productCae);
+		$statement->bindValue(':relevanceModel', $relevanceModel);
+		$statement->bindValue(':relevanceBrand', $relevanceBrand);
+		$statement->bindValue(':shouldCheckByOperator', $shouldCheckByOperator);
+		$statement->execute();
+	}
+
+	/**
 	 * @param $siteUrl
-	 * @return array
+	 * @return RivalTireModel[]
 	 */
 	function FindParsedResultsBySiteUrl($siteUrl)
 	{
-		// TODO: Implement FindParsedResultsBySiteUrl() method.
 		$selectSql = "SELECT * FROM RivalParsedResults WHERE site = '".$siteUrl."'";
 		return $this->_db->query($selectSql)->fetchAll(PDO::FETCH_CLASS, "RivalTireModel");
 	}

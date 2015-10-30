@@ -19,4 +19,7 @@ class ComparisonResult extends ProductTireModel
 	 * @var RivalTireModel|StdClass TODO: если будем искать еще и диски, соответственно надо будет менять
 	 */
 	public $rivalModel;
+	public $relevanceModel;
+	public $relevanceBrand;
+	public $rivalParsedId;
 }

@@ -7,6 +7,11 @@ require_once 'base/IDbController.php';
  * Date: 20.10.15
  * Time: 10:01
  */
+
+/**
+ * Class MongoDbController
+ * @deprecated
+ */
 class MongoDbController implements IDbController
 {
 	const MONGO_DB = "RivalParsingDB";
@@ -65,7 +70,7 @@ class MongoDbController implements IDbController
 	 * @param $objectToInsert RivalTireModel | StdClass
 	 * @return mixed
 	 */
-	function AddProductsData($objectToInsert)
+	function AddProducts($objectToInsert)
 	{
 		// TODO: Implement AddProductsData() method.
 	}
@@ -75,7 +80,7 @@ class MongoDbController implements IDbController
 	 * @param RivalTireModel[] | StdClass[] $models
 	 * @return ProductTireModel[] | StdClass[]
 	 */
-	function FindInProducts($models = null)
+	function CompareWithProducts($models = null)
 	{
 		// TODO: Implement FindInProducts() method.
 	}
@@ -93,5 +98,40 @@ class MongoDbController implements IDbController
 	function GetAllBrands()
 	{
 		// TODO: Implement GetAllBrands() method.
+	}
+
+
+	/**
+	 * Связывает результаты сопоставления в соответствии с релевантностью
+	 * @param $parsedResultId int
+	 * @param $productCae string
+	 * @param $relevanceModel float
+	 * @param float $relevanceBrand
+	 * @param $shouldCheckByOperator
+	 * @return mixed
+	 */
+	function LinkParsedResultToProduct($parsedResultId, $productCae, $relevanceModel, $relevanceBrand, $shouldCheckByOperator)
+	{
+		// TODO: Implement LinkParsedResultToProduct() method.
+	}
+
+	/**
+	 * Поиск по спарсенному в таблице сравнений
+	 * @param $rivalModel RivalTireModel
+	 * @return CsvViewModel | null
+	 */
+	function FindInComparedByRivalModel($rivalModel)
+	{
+		// TODO: Implement FindInComparedByRivalModel() method.
+	}
+
+	/**
+	 * Поиск по сопоставленному по
+	 * @param $siteUrl string
+	 * @return CsvViewModel[]
+	 */
+	function FindInComparedByUrl($siteUrl)
+	{
+		// TODO: Implement FindInComparedByUrl() method.
 	}
 }

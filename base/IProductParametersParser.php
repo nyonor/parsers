@@ -1,11 +1,11 @@
 <?php
 
 /**
+ * Класс, который реализует этот интерфейс позволит получать параметры товаров из входного аргумента
  * Created by PhpStorm.
  * User: NyoNor
  * Date: 27.10.15
  * Time: 12:17
- * Класс, который реализует этот интерфейс позволит получать параметры товаров из входного аргумента
  * например с помощью RegExp
  */
 interface IProductParametersParser
@@ -30,6 +30,13 @@ interface IProductParametersParser
 	 * @return float
 	 */
 	function GetPrice($subject);
+
+	/**
+	 * Возвращает количество
+	 * @param $subject
+	 * @return int
+	 */
+	function GetQuantity($subject); //todo РЕАЛИЗУЙ!
 
 	//TODO: ДОПИСАТЬ МЕТОДЫ из KolesoRussiaParser->Parse()
 }

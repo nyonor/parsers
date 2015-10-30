@@ -23,4 +23,16 @@ class RivalTireModel extends TireModel
 	 * @var float
 	 */
 	public $price;
+
+	/**
+	 * Остатки
+	 * @var int
+	 */
+	public $quantity;
+
+	/**
+	 * id в БД
+	 * @var int
+	 */
+	public $id;
 }

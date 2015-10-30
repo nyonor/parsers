@@ -1,6 +1,8 @@
 <?php
 
 /**
+ * Класс создан для обновления НАШЕЙ номенклатуры
+ * из файла по пути (или из потока по url)
  * Created by PhpStorm.
  * User: NyoNor
  * Date: 21.10.15
@@ -19,9 +21,15 @@ class ProductsUpdater implements IProductsUpdater
 		$this->_dbController = $dbController;
 	}
 
+	/**
+	 * Обновляет номенклатуру
+	 * @throws Exception
+	 */
 	public function UpdateProducts() {
 		if ($this->_dbController == null)
 			throw new Exception("No IDbController provided!");
+
+		$this->_dbController->TruncateOldProductsData();
 
 		$this->LoadSimpleXmlContent();
 		$results = [];
@@ -47,20 +55,19 @@ class ProductsUpdater implements IProductsUpdater
 			$productTireModel->speedIndex = strtolower((string)$productXml->speed_index);
 			$productTireModel->runFlat = (string)$productXml->puncture != null && (string)$productXml->puncture != ' ';
 			$results[] = $productTireModel;
-			//break;
-
-			if((string)$productXml->code == "510043") {
-				var_dump($productXml);
-				var_dump($productTireModel);
-			}
 		}
 
-		$this->_dbController->AddProductsData($results);
+		$this->_dbController->AddProducts($results);
 	}
 
+	/**
+	 * Загружает объект SimpleXMLElement в свойство
+	 * экземпляра данного класса
+	 */
 	protected function LoadSimpleXmlContent() {
 		$this->_xmlContent = simplexml_load_file($this->GetProductsFilePath());
 	}
+
 
 	protected function GetProductsFilePath() {
 		return getcwd() . self::LOCAL_PRODUCTS_FILE_REL_PATH;

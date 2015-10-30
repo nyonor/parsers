@@ -27,27 +27,12 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 		$maxSprints = 0;
 
 		$url = sprintf($this->_urlPattern, $sprint);
-
 		echo "<br/><br/><br/><br/>" . $url . "<br/><br/><br/><br/>";
-
 		$curl = $this->GetCurl($url);
 
 		$results = [];
 
 		$allBrandsWeHave = $this->GetAllBrands();
-		//$allModelsWeHave = $dbController->GetAllModels();
-
-		//var_dump($allBrandsWeHave);
-		//print_r($allModelsWeHave);
-
-		/*foreach($allModelsWeHave as $k => $val) {
-			$first = strtolower(str_replace('/','\/',$val));
-			$second = str_replace('(','\(', $first);
-			$allModelsWeHave[$k] = str_replace(')','\)',$second);
-		}*/
-
-		//print_r($allModelsWeHave);//die;
-
 		$implodedBrands = implode('|', $allBrandsWeHave);
 		//$implodedModels = implode('|', $allModelsWeHave);
 
@@ -64,11 +49,6 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 			$htmlDom = new HtmlDomParser();
 			$strHtmlDom = $htmlDom->str_get_html($rawRes);
 
-			/*$pattern = '/<a[^>]+class="title"[^>]+>([^<]+)<\/a>/';
-			$outputArray = [];
-			preg_match_all($pattern, $rawRes, $outputArray);
-
-			foreach($outputArray[1] as $title) {*/
 			foreach($strHtmlDom->find('.mainconteinercenter') as $div) {;
 				$title = $div->find('a.title')[0]->plaintext;
 				//echo "<br/>" . $title;die;
@@ -78,7 +58,7 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 				$brandMatchResult = "";
 
 				$brandRegex = "/(" . $implodedBrands . "|[а-яА-Я]+)/i";
-				//$modelsRegex = "/(" . $implodedModels . ")/is"; //todo остановился тут!!!
+				//$modelsRegex = "/(" . $implodedModels . ")/is";
 
 				//echo  $modelsRegex;//die;
 
@@ -92,16 +72,6 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 				$title = str_replace(strtolower($brand),strtoupper($brand),strtolower($title));
 				echo "<br/>" . $title;
 
-
-
-				//$modelMatchResult = "";
-				//preg_match('/(?:[А-ЯA-Z]+\s+[А-ЯA-Z]+)\s+([^<\/]+)\s(?:\d{3}\/|\d{2}\/)|(?:[А-ЯA-Z]+)\s+([^<\/]+)\s(?:\d{3}\/|\d{2}\/)/',
-				//preg_match('/(?:'. $implodedBrands .'|[а-яА-Я]+)\s+(.*?)\s+(?:\d+\/\d+|\d+x\d+|\d+X\d+|\d+)/is',
-				//preg_match($modelsRegex,
-				//		$title, $modelMatchResult);
-				//$model = $modelMatchResult[1] != null ? $modelMatchResult[1] : $modelMatchResult[2];
-				//echo "<br/>" . $model;
-				//$rivalTireModel->model = $model;
 				$contentBlockText = $div->find('p.contentblock')[0]->plaintext;
 				$rivalTireModel->model = $this->GetModelName($contentBlockText);
 				//var_dump($rivalTireModel);die;
@@ -144,7 +114,9 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 
 				$rivalTireModel->season = $this->GetSeason($contentBlockText);
 				$rivalTireModel->price = (float)$this->GetPrice($div->find('p.contentblock',0)->find('span.discount',0));
-
+				//print_r($div->find('p.contentblock table.info_data ul.ostatki')); die;
+				$rivalTireModel->quantity = $this->GetQuantity($div->find('p.contentblock table.info_data ul.ostatki'));
+				//die;
 				//echo "<br/><br/>";
 				
 				$rivalTireModel->url = $url;
@@ -169,6 +141,24 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 		curl_close($curl);
 
 		return $results;
+	}
+
+	/**
+	 * Возвращает количество
+	 * @param $subject
+	 * @return int
+	 */
+	function GetQuantity($subject)
+	{
+		$totalQty = 0;
+		foreach($subject as $ostatkiUl) {
+			preg_match_all('/\(>?(\d+)\)/is', $ostatkiUl->innertext, $qtyMatchResult);
+			//echo ($qtyMatchResult);
+			foreach($qtyMatchResult[1] as $qty) {
+				$totalQty += $qty;
+			}
+		}
+		return $totalQty;
 	}
 
 	/**
@@ -209,11 +199,11 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 	}
 
 	/**
-	 * @deprecated
+	 * TODO: перенести в IDbController! и изменить таблицу источник?
 	 * @return array
 	 */
 	protected function GetAllBrands() {
-		$sql = "select * from (SELECT distinct(CONVERT(Company USING ASCII)) AS 'Brand' FROM 4tochki.tyres) as q1 where Brand not like '%?%' and Brand != ''";
+		$sql = "select * from (SELECT distinct(CONVERT(company USING ASCII)) AS 'Brand' FROM 4tochki.tyres) as q1 where Brand not like '%?%' and Brand != ''";
 		$sqlResult = mysql_query($sql);
 		$brandsArr = [];
 		while($row = mysql_fetch_assoc($sqlResult)) {

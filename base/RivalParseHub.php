@@ -1,10 +1,15 @@
 <?php
 /**
  * RivalParseHub
- * Может осуществлять обработку результатов парсеров RivalParserBase
- * Может считывать в качестве результатов файлы содержащие json массив с объектами результатов парсинга
- * Может запускать nodeJs скрипты (предполагается, что скрипт будет парсить сайт и создавать файл с json для
- * дальнейшей обработки)
+ * Может осуществлять обработку результатов парсеров RivalParserBase.
+ * Может считывать в качестве результатов файлы содержащие json массив с
+ * объектами результатов парсинга.
+ * Может запускать nodeJs скрипты (предполагается, что скрипт будет
+ * парсить сайт и создавать файл с json для
+ * дальнейшей обработки).
+ * Обрабатывает и сохраняет результаты парсинга,
+ * позволяет делать сравнение результатов парсинга и нашей номенклатуры,
+ * представляет результаты в виде файла csv
  *
  * Created by PhpStorm.
  * User: NyoNor
@@ -12,7 +17,7 @@
  * Time: 10:43
  */
 
-//некоторые константы
+//некоторые константы TODO: перенести в статику класса
 define ("NODE_VAR_NAME", "node");
 define ("PATH_TO_PARSED_FILES", "/files");
 
@@ -60,32 +65,70 @@ class RivalParseHub {
 	 */
     public function __construct($scriptMaxExecutionTime = 0) {
 
+        // TODO: сомнительно что это должно быть тут...
         set_time_limit($scriptMaxExecutionTime); //парсинг обычно выполняется не быстро
     }
 
-    //todo делаю
-    public function GetComparingResultAsCsv($rivalSiteUrl) {
 
-        //echo "HI!";
-        $subjectResults = $this->_lastParseResults;
-        if ($subjectResults == null) {
-            //throw new Exception("No parsed results!"); //todo достать из базы
-            //echo "here";die;
-            $subjectResults = $this->_dbController->FindParsedResultsBySiteUrl($rivalSiteUrl);
+    //TODO: разбить на методы
+    /**
+     * @param $rivalSiteUrl
+     * @return bool|ComparisonResult[]|CsvViewModel[]|RivalTireModel[]
+     */
+    public function GetComparingResult($rivalSiteUrl) {
+
+        if (empty($rivalSiteUrl)) {
+            throw new InvalidArgumentException("rivalSiteUrl argument is missing!");
+        }
+
+        //ищем в таблице сравнений
+        $subjectResults = $this->_dbController->FindInComparedByUrl($rivalSiteUrl);
+        if($subjectResults != false) {
+            //возвращаем результат
             //var_dump($subjectResults);
+            return $subjectResults;
         }
 
+        //если не нашли, то получаем массив результатов парсинга
+        $subjectResults = $this->_dbController->FindParsedResultsBySiteUrl($rivalSiteUrl);
+
+        /*
+         * пробегаемся массив результатов парсинга и сравниваем...
+         * все будет добавлено в табилцу сравнений
+         */
+        /**
+         * @var $results ComparisonResult[]
+         */
         $results = [];
+        $notMatchedArray = [];
+        $matchedTrulyArray = [];
+        $matchedNotTrulyArray = [];
         foreach($subjectResults as $rivalModel) {
-            //var_dump($rivalModel);
-            $comparisonRes = $this->_dbController->FindInProducts($rivalModel);
+            //echo"1";
+            $comparisonRes = $this->_dbController->CompareWithProducts($rivalModel);
+            $results[] = $comparisonRes;
 
-            if ($comparisonRes != null)
-                $results[] = $comparisonRes;
+            if($comparisonRes->cae == null) {
+                $notMatchedArray[] = $comparisonRes;
+                continue;
+            }
+
+            if($comparisonRes->shouldCheckByOperator == false) {
+                $matchedTrulyArray[] = $comparisonRes;
+                continue;
+            } else {
+                $matchedNotTrulyArray[] = $comparisonRes;
+            }
         }
 
-        var_dump($results);
+        echo "Всего сопоставлено: ". count($results) ."<br/>";
+        echo "Из них сопоставлено на 100%: ". count($matchedTrulyArray) ."<br/>";
+        echo "Из них нужно проверить оператором: ". count($matchedNotTrulyArray) ."<br/>";
+        echo "Из них НЕ сопоставлено: ". count($notMatchedArray) ."<br/>";
+        //var_dump($results);
 
+        //возвращаем
+        return $results;
     }
 
     /**
@@ -137,14 +180,13 @@ class RivalParseHub {
 	 * @param string $path
 	 */
     public function ExecuteNodeJsScript($path) {
-
         passthru(NODE_VAR_NAME . " " . $path); //выполняем скрипт nodejs по пути $path
-
     }
 
 	/**
 	 * Обработка файла с json данными парсинга
 	 * @param string $fileName
+     * @deprecated
      * todo в принципе пока не используется, перед использованием проверить функциональность!
 	 */
     public function ProcessParsedDataFromFileToDB($fileName) {
@@ -164,22 +206,26 @@ class RivalParseHub {
      * @throws Exception
      */
     public function ProcessParsedDataFromInjectedParserToDB() {
+
         //обновим номенклатуру если свойство == true
         if ($this->shouldUpdateProductsBeforeParsingResults) {
             $pu = $this->GetProductsUpdater();
             $pu->UpdateProducts();
         }
 
+        //начинаем парсинг
         $parsedModel = $this->_currentParser->Parse($this->_dbController);
 
         $this->_lastParseResults = $parsedModel;
 
-		echo count($parsedModel);
+		echo "<br/><br/>Cпарсено товаров:" . count($parsedModel) ."<br/><br/>";
 
+        //очищаем предыдущие результаты парсинга по полю site
 		if (count($parsedModel) > 0) {
 			$this->_dbController->TruncateOldParseResult($this->_currentParser->GetSiteToParseUrl());
 		}
 
+        //записываем результаты парсинга в бд
         foreach($parsedModel as $key => $rivalTireModel) {
             $this->StoreObjectToDB($rivalTireModel);
         }
@@ -216,66 +262,4 @@ class RivalParseHub {
 			throw new Exception("IDbController should be injected to RivalParserHub!");
 		$this->_dbController->AddParsingResult($object);
     }
-
-    //todo нет проверки типа и остатков, пишется в таблицу с шинами...
-	/*
-    protected function StoreObjectToDB($object) {
-        $insertSql =
-			"INSERT INTO tyres SET
-			company = '".$object->brand."',
-			model = '".$object->model."',
-			d = ".$object->diameter.",
-			sh = ".$object->width.",
-			prof = '".$object->height."',
-			speed_index = '".$object->speedIndex."',
-			loading_index = ".$object->loadIndex.",
-			type = 1,
-			price = ".$object->price.",
-			site = '".$object->site."',
-			url = '".$object->url."',
-			date = NOW(),
-			runflat = ".$object->runflat.",
-			rest = 1";
-
-        //echo $object->title . "<br/>";
-        //echo $insertSql . "<br/><br/>";
-        //return false;
-
-        $selectSql =
-            "SELECT id FROM tyres WHERE
-            company = '".$object->brand."'
-            AND model = '".$object->model."'
-            AND d = ".$object->diameter."
-            AND sh = ".$object->width."
-            AND prof = '".$object->height."'
-            AND speed_index = '".$object->speedIndex."'
-            AND loading_index = ".$object->loadIndex."
-            AND type = 1
-            AND price = ".$object->price."
-            AND site = '".$object->site."'
-            AND url = '".$object->url."'
-            AND runflat = ".$object->runflat."
-            AND rest = 1";
-
-        //echo $selectSql;
-        //die;
-
-        $selectResult = mysql_query($selectSql);
-        //echo "checl!!!";
-        echo "<fieldset><legend>".$object->title."</legend>";
-        echo "<br/>Проверяю... ". $selectSql . "...нашел? ==> " .mysql_num_rows($selectResult)." <br/>";
-        //echo mysql_num_rows($selectResult); die;
-        if(mysql_num_rows($selectResult) == 0)
-        {
-            //echo "CHECK!";
-            $insertResult = mysql_query($insertSql);
-            echo sprintf("Пишу... %s <br/> ... Получилось? ==> %d <br/><br/>", $insertSql, $insertResult);
-        }
-        echo "</fieldset>";
-//die;
-        //print_r($result);
-        //die;
-
-        //if ($result)
-    }*/
 }

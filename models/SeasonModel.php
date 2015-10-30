@@ -14,28 +14,31 @@ class SeasonModel
 
 	/**
 	 * Подпихни сюда строчку - метод создаст класс сезона
+	 * ВНИМАНИЕ! Используй на свой страх и риск
+	 * ибо этот метод конструировался для работы с обновлением НАШЕЙ номенклатуры
+	 * TODO: можно формировать regex паттерн динамически с помощью доп аргумента
 	 * @param $stringWithSeasonName string
 	 * @return SeasonModel
 	 */
 	public static function Factory($stringWithSeasonName) {
 
 		//var_dump($stringWithSeasonName, true);
-//echo $stringWithSeasonName;
+//var_dump( $stringWithSeasonName);die;
 		//print ($stringWithSeasonName);
 		$match = "";
-		preg_match('/([Зз][Ии][Мм][Нн][Ии][Ее])/isu',$stringWithSeasonName,$match);
+		preg_match('/([Зз][Ии][Мм][Нн])/isu',$stringWithSeasonName,$match);
 		//var_dump($match);
-		if (count($match) > 0 && $match[1] != null)
+		if (count($match) > 1 && $match[1] != null)
 			return new SeasonModel(SeasonModel::WINTER);
 
 		$match = null;
-		preg_match('/([Лл][Ее][Тт][Нн][Ии][Ее])/isu',$stringWithSeasonName,$match);
-		if (count($match) > 0 && $match[1] != null)
+		preg_match('/([Лл][Ее][Тт][Нн])/isu',$stringWithSeasonName,$match);
+		if (count($match) > 1 && $match[1] != null)
 			return new SeasonModel(SeasonModel::SUMMER);
 
 		$match = null;
 		preg_match('/([Вв][Сс][Ее][Сс][Ее][Зз][Оо][Нн])/isu',$stringWithSeasonName,$match);
-		if (count($match) > 0 && $match[1] != null)
+		if (count($match) > 1 && $match[1] != null)
 			return new SeasonModel(SeasonModel::ALL_SEASONS);
 
 		return null;
