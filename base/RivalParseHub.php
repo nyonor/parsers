@@ -65,7 +65,6 @@ class RivalParseHub {
 	 */
     public function __construct($scriptMaxExecutionTime = 0) {
 
-        // TODO: сомнительно что это должно быть тут...
         set_time_limit($scriptMaxExecutionTime); //парсинг обычно выполняется не быстро
     }
 
@@ -92,6 +91,8 @@ class RivalParseHub {
         //если не нашли, то получаем массив результатов парсинга
         $subjectResults = $this->_dbController->FindParsedResultsBySiteUrl($rivalSiteUrl);
 
+        //var_dump($subjectResults);
+
         /*
          * пробегаемся массив результатов парсинга и сравниваем...
          * все будет добавлено в табилцу сравнений
@@ -105,10 +106,11 @@ class RivalParseHub {
         $matchedNotTrulyArray = [];
         foreach($subjectResults as $rivalModel) {
             //echo"1";
+            $comparisonRes = null;
             $comparisonRes = $this->_dbController->CompareWithProducts($rivalModel);
             $results[] = $comparisonRes;
 
-            if($comparisonRes->cae == null) {
+            if(empty($comparisonRes->cae)) {
                 $notMatchedArray[] = $comparisonRes;
                 continue;
             }
@@ -128,7 +130,7 @@ class RivalParseHub {
         //var_dump($results);
 
         //возвращаем
-        return $results;
+        return array_merge($matchedTrulyArray, $matchedNotTrulyArray);
     }
 
     /**
@@ -201,27 +203,30 @@ class RivalParseHub {
 
     }
 
+    public function UpdateProducts() {
+        $this->_dbController->TruncateOldProductsData();
+        $pu = $this->GetProductsUpdater();
+        $pu->UpdateProducts();
+        return $this;
+    }
+
     /**
      * Выполняет парсинг и обработку результатов, это основной метод для работы
+     * @param bool $shouldTruncateOldData
+     * @return $this
      * @throws Exception
      */
-    public function ProcessParsedDataFromInjectedParserToDB() {
-
-        //обновим номенклатуру если свойство == true
-        if ($this->shouldUpdateProductsBeforeParsingResults) {
-            $pu = $this->GetProductsUpdater();
-            $pu->UpdateProducts();
-        }
+    public function ProcessParsedDataFromInjectedParserToDB($shouldTruncateOldData = true) {
 
         //начинаем парсинг
         $parsedModel = $this->_currentParser->Parse($this->_dbController);
 
         $this->_lastParseResults = $parsedModel;
 
-		echo "<br/><br/>Cпарсено товаров:" . count($parsedModel) ."<br/><br/>";
+		//echo "<br/><br/>Cпарсено товаров:" . count($parsedModel) ."<br/><br/>";
 
         //очищаем предыдущие результаты парсинга по полю site
-		if (count($parsedModel) > 0) {
+		if (count($parsedModel) > 0 && $shouldTruncateOldData) {
 			$this->_dbController->TruncateOldParseResult($this->_currentParser->GetSiteToParseUrl());
 		}
 

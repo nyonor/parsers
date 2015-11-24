@@ -12,6 +12,8 @@ class MysqlDbController implements IDbController
 	const MYSQL_DSN = "mysql:host=localhost;dbname=4tochki;charset=utf8";
 	const MYSQL_USER_LOGIN = "mysqlUser";
 	const MYSQL_PASSWORD = "iddqd";
+	/*const MYSQL_USER_LOGIN = "root";
+	const MYSQL_PASSWORD = "-oA8M%#%%x";*/
 	const KEY_PREPARED_STATEMENT_SELECT_MATCH_PARSED_IN_PRODUCTS = "prepStForSel";
 	const KEY_PREPARED_STATEMENT_INSERT_PARSED_RESULT = "prepStForIns";
 	const KEY_PREPARED_STATEMENT_INSERT_LINK_PRODUCTS_TO_PARSED_RESULT = "prepStForLink";
@@ -135,11 +137,11 @@ class MysqlDbController implements IDbController
 	/**
 	 * Поиск в таблице сравнений
 	 * @param $siteUrl string
-	 * @return CsvViewModel[] | boolean
+	 * @return ComparisonResult[] | boolean
 	 */
 	function FindInComparedByUrl($siteUrl)
 	{
-		$selectQuery = "SELECT products.cae, parsed.price, compared.shouldCheckByOperator, parsed.quantity
+		$selectQuery = "SELECT *, parsed.id as rivalParsedId, parsed.brand as conBrand, parsed.model as conModel
 						FROM 4tochki.RivalParsedResulstToProducts as compared
 						LEFT JOIN Products as products on products.cae = compared.productCae
 						LEFT JOIN RivalParsedResults as parsed on parsed.id = compared.rivalParsedResultsId
@@ -154,11 +156,12 @@ class MysqlDbController implements IDbController
 	/**
 	 * Точный поиск в таблице сравнений
 	 * @param $rivalModel RivalTireModel
-	 * @return mixed
+	 * @return ComparisonResult[]
 	 */
 	function FindInComparedByRivalModel($rivalModel) {
 
-		$selectQuery = "SELECT products.cae, parsed.price, compared.shouldCheckByOperator, parsed.quantity
+		$selectQuery = "SELECT products.cae, parsed.price, compared.shouldCheckByOperator, parsed.quantity,
+						parsed.brand as conBrand, parsed.model as conModel
 						FROM 4tochki.RivalParsedResulstToProducts as compared
 						LEFT JOIN Products as products on products.cae = compared.productCae
 						LEFT JOIN RivalParsedResults as parsed on parsed.id = compared.rivalParsedResultsId
@@ -196,7 +199,7 @@ class MysqlDbController implements IDbController
 
 		if ($statement->execute()) {
 
-			$result = $statement->fetchObject('CsvViewModel');
+			$result = $statement->fetchObject('ComparisonResult');
 			return $result;
 		}
 
@@ -211,8 +214,15 @@ class MysqlDbController implements IDbController
 	function CompareWithProducts($rivalModel)
 	{
 		//var_dump($rivalModel);
+
+		$rfStr = "";
+		if($rivalModel->runFlat != null) {
+			$rfStr = " AND runFlat = :runFlat ";
+		}
+
 		//ищем
-		$selectSql = "SELECT *, MATCH(model) AGAINST(:model) as 'relevanceModel',
+		$selectSql = "SELECT *,
+						MATCH(model) AGAINST(:model) as 'relevanceModel',
 						MATCH (brand) AGAINST (:brand) as 'relevanceBrand'
 						FROM Products WHERE
 						MATCH (brand) AGAINST (:brand) AND
@@ -224,9 +234,11 @@ class MysqlDbController implements IDbController
 						loadIndex = :loadIndex AND
 						speedIndex = :speedIndex AND
 						productType = :productType AND
-						season = :season AND
-						runFlat = :runFlat
+						season = :season
+						$rfStr
 						ORDER BY relevanceBrand DESC, relevanceModel DESC, length(model) DESC";
+
+		//var_dump($selectSql);
 
 		//если подготовленного выражения нет, то добавим его по ключу
 		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_MATCH_PARSED_IN_PRODUCTS) == null) {
@@ -250,28 +262,29 @@ class MysqlDbController implements IDbController
 		//var_dump($modelParam);
 
 		$statement->bindValue(':brand', $rivalModel->brand);
-		$statement->bindParam(':model', $modelParam);
-		$statement->bindParam(':width', $rivalModel->width);
-		$statement->bindParam(':height', $rivalModel->height);
-		$statement->bindParam(':constructionType', $rivalModel->constructionType);
-		$statement->bindParam(':diameter', $rivalModel->diameter);
-		$statement->bindParam(':loadIndex', $rivalModel->loadIndex);
-		$statement->bindParam(':speedIndex', $rivalModel->speedIndex);
-		$statement->bindParam(':season', $rivalModel->season);
-		$statement->bindParam(':runFlat', $rivalModel->runFlat);
+		$statement->bindValue(':model', $modelParam);
+		$statement->bindValue(':width', $rivalModel->width);
+		$statement->bindValue(':height', $rivalModel->height);
+		$statement->bindValue(':constructionType', $rivalModel->constructionType);
+		$statement->bindValue(':diameter', $rivalModel->diameter);
+		$statement->bindValue(':loadIndex', $rivalModel->loadIndex);
+		$statement->bindValue(':speedIndex', $rivalModel->speedIndex);
+		$statement->bindValue(':season', $rivalModel->season);
+		if ($rivalModel->runFlat != null)
+			$statement->bindValue(':runFlat', $rivalModel->runFlat);
 		$statement->bindValue(':productType', "tire");
 
 		//выполняем
 		if ($statement->execute()) {
 			/**
-			 * @var $productModel ComparisonResult
+			 * @var $comparisonResultModel ComparisonResult
 			 */
 			$result = $statement->fetchObject('ComparisonResult');
 
 			if ($result != null) {
-				$productModel = $result;
+				$comparisonResultModel = $result;
 			} else {
-				$productModel = new ComparisonResult();
+				$comparisonResultModel = new ComparisonResult();
 			}
 
 			//var_dump($cr);
@@ -280,26 +293,30 @@ class MysqlDbController implements IDbController
 			 * в последствии его можно будет использовать в выгрузке или
 			 * для формирования таблицы с правилами
 			 */
-			if ($productModel != null && (strcasecmp($rivalModel->model, $productModel->model) != 0
-					|| strcasecmp($rivalModel->brand, $productModel->brand) != 0)) {
-				$productModel->shouldCheckByOperator = true;
+			if ($comparisonResultModel != null && (strcasecmp($rivalModel->model, $comparisonResultModel->model) != 0
+					|| strcasecmp($rivalModel->brand, $comparisonResultModel->brand) != 0)) {
+				$comparisonResultModel->shouldCheckByOperator = true;
 			}
-			else if ($productModel != null ) {
-				$productModel->shouldCheckByOperator = false;
+			else if ($comparisonResultModel != null ) {
+				$comparisonResultModel->shouldCheckByOperator = false;
 			}
 
-			if($productModel != null) {
-				$productModel->rivalModel = $rivalModel;
+			if($comparisonResultModel != null) {
+				//$comparisonResultModel->rivalModel = $rivalModel;
+				$comparisonResultModel->quantity = $rivalModel->quantity;
+				$comparisonResultModel->price = $rivalModel->price;
+				$comparisonResultModel->conModel = $rivalModel->model;
+				$comparisonResultModel->conBrand = $rivalModel->brand;
 				//var_dump($productModel);
 
 				//var_dump($rivalModel);
 
 				//сделаем запись в таблице связей
-				if ($productModel->cae != null) {
+				if ($comparisonResultModel->cae != null) {
 					try {
 						$this->LinkParsedResultToProduct
-						($rivalModel->id, $productModel->cae, $productModel->relevanceModel, $productModel->relevanceBrand,
-							$productModel->shouldCheckByOperator);
+						($rivalModel->id, $comparisonResultModel->cae, $comparisonResultModel->relevanceModel, $comparisonResultModel->relevanceBrand,
+							$comparisonResultModel->shouldCheckByOperator);
 					} catch(PDOException $e) {
 						//на таблице висит констрэйнт UNIQUE
 					} catch (Exception $e) {
@@ -307,7 +324,7 @@ class MysqlDbController implements IDbController
 					}
 
 				}
-				return $productModel;
+				return $comparisonResultModel;
 			} else {
 				//TODO: если не нашли то записать в таблицу не найденных? Нужно ли нам хранить историю парсинга? Или очищать предыдущие результаты каждый раз при новом парсинге ресурса?
 			}
@@ -373,8 +390,13 @@ class MysqlDbController implements IDbController
 
 	function GetAllBrands()
 	{
-		//$selectQuery = ""
-		//TODO: Implement GetAllBrands
+		$sql = "SELECT DISTINCT(Products.brand) AS 'Brand' FROM 4tochki.Products ";
+		$sqlResult = $this->_db->query($sql)->fetchAll();
+		$brandsArr = [];
+		foreach($sqlResult as $row) {
+			$brandsArr[] = $row['Brand'];
+		}
+		return $brandsArr;
 	}
 
 	function __destruct() {

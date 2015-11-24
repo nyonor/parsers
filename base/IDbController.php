@@ -54,7 +54,6 @@ interface IDbController
 	function GetAllModels();
 
 	/**
-	 * @deprecated
 	 * @return mixed
 	 */
 	function GetAllBrands();
@@ -75,14 +74,14 @@ interface IDbController
 	/**
 	 * Поиск по спарсенному в таблице сравнений
 	 * @param $rivalModel RivalTireModel
-	 * @return CsvViewModel | null
+	 * @return ComparisonResult[] | null
 	 */
  	function FindInComparedByRivalModel($rivalModel);
 
 	/**
 	 * Поиск в таблице сравнений
 	 * @param $siteUrl string
-	 * @return CsvViewModel[] | boolean
+	 * @return ComparisonResult[] | boolean
 	 */
 	function FindInComparedByUrl($siteUrl);
 }

@@ -14,12 +14,11 @@ class ComparisonResult extends ProductTireModel
 	 * @var boolean
 	 */
 	public $shouldCheckByOperator;
-
-	/**
-	 * @var RivalTireModel|StdClass TODO: если будем искать еще и диски, соответственно надо будет менять
-	 */
-	public $rivalModel;
 	public $relevanceModel;
 	public $relevanceBrand;
 	public $rivalParsedId;
+	public $quantity;
+	public $conModel;
+	public $conBrand;
+
 }

@@ -10,6 +10,7 @@
 
 //todo поменять все на USE/<NAMESPACE>
 use Sunra\PhpSimple\HtmlDomParser;
+use sys\Timer;
 
 class KolesoRussiaParser extends RivalParserBase implements IProductParametersParser {
 
@@ -27,18 +28,21 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 		$maxSprints = 0;
 
 		$url = sprintf($this->_urlPattern, $sprint);
-		echo "<br/><br/><br/><br/>" . $url . "<br/><br/><br/><br/>";
+		//echo "<br/><br/><br/><br/>" . $url . "<br/><br/><br/><br/>";
 		$curl = $this->GetCurl($url);
 
 		$results = [];
 
-		$allBrandsWeHave = $this->GetAllBrands();
+		$allBrandsWeHave = $dbController->GetAllBrands();
 		$implodedBrands = implode('|', $allBrandsWeHave);
 		//$implodedModels = implode('|', $allModelsWeHave);
 
 		do {
 
+			echo "Запрос курлом...";
+			$ts = Timer::Start();
 			$rawRes =  iconv('cp1251', 'utf8', curl_exec($curl));
+			echo "...".Timer::StopAndResult($ts)."sec <br/>";
 
 			$stopRequestsMatchResult = "";
 			preg_match('/(Ошибка 404. Страница не найдена)/', $rawRes, $stopRequestsMatchResult);
@@ -46,10 +50,18 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 				break;
 			}
 
+			echo "HtmlDomParser->str_get_html...";
+			$ts = Timer::Start();
 			$htmlDom = new HtmlDomParser();
 			$strHtmlDom = $htmlDom->str_get_html($rawRes);
+			echo "...".Timer::StopAndResult($ts)."<br/>";
 
-			foreach($strHtmlDom->find('.mainconteinercenter') as $div) {;
+			if (!method_exists($strHtmlDom,"find"))
+				continue;
+
+			echo "HtmlDomParser->find('.mainconteinercenter')...";
+			$ts = Timer::Start();
+			foreach($strHtmlDom->find('.mainconteinercenter') as $div) {
 				$title = $div->find('a.title')[0]->plaintext;
 				//echo "<br/>" . $title;die;
 
@@ -57,20 +69,25 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 
 				$brandMatchResult = "";
 
-				$brandRegex = "/(" . $implodedBrands . "|[а-яА-Я]+)/i";
+				$brandRegex = "/(" . $implodedBrands . "|[а-яА-Я]+)/is";
+				//echo $brandRegex; die;
 				//$modelsRegex = "/(" . $implodedModels . ")/is";
 
 				//echo  $modelsRegex;//die;
 
 				//preg_match('/([А-ЯA-Z]+\s[А-ЯA-Z]+)\s|([А-ЯA-Z]+)/', $title, $brandMatchResult);
 				preg_match($brandRegex, $title, $brandMatchResult);
+				if(count($brandMatchResult) == 1 || count($brandMatchResult) == 0) {
+					continue;
+				}
+
 				$brand = $brandMatchResult[1] != null ? $brandMatchResult[1] : $brandMatchResult[2];
 				//echo "<br/>" . $brand;
 				$rivalTireModel->brand = $brand;
 
 				//сделаем бренд в верхнем регистре, все остальное в нижнем регистре
 				$title = str_replace(strtolower($brand),strtoupper($brand),strtolower($title));
-				echo "<br/>" . $title;
+				//echo "<br/>" . $title;
 
 				$contentBlockText = $div->find('p.contentblock')[0]->plaintext;
 				$rivalTireModel->model = $this->GetModelName($contentBlockText);
@@ -118,7 +135,7 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 				$rivalTireModel->quantity = $this->GetQuantity($div->find('p.contentblock table.info_data ul.ostatki'));
 				//die;
 				//echo "<br/><br/>";
-				
+
 				$rivalTireModel->url = $url;
 				$rivalTireModel->site = self::SITE_URL;
 
@@ -126,6 +143,7 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 
 				$results[] = $rivalTireModel;
 			}
+			echo "...".Timer::StopAndResult($ts)."<br/>";
 
 			$sprint++;
 
@@ -200,11 +218,13 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 
 	/**
 	 * TODO: перенести в IDbController! и изменить таблицу источник?
+	 * @deprecated
 	 * @return array
 	 */
 	protected function GetAllBrands() {
 		$sql = "select * from (SELECT distinct(CONVERT(company USING ASCII)) AS 'Brand' FROM 4tochki.tyres) as q1 where Brand not like '%?%' and Brand != ''";
 		$sqlResult = mysql_query($sql);
+		print_r($sqlResult);die;
 		$brandsArr = [];
 		while($row = mysql_fetch_assoc($sqlResult)) {
 			//echo "<br/>". $row['Brand'] . "---->" . mb_detect_encoding($row['Brand']);
@@ -213,7 +233,6 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 		}
 		return $brandsArr;
 	}
-
 
 
 	//todo переместить в базовый класс?
@@ -251,5 +270,108 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 	public function GetSiteToParseUrl()
 	{
 		return self::SITE_URL;
+	}
+
+	function GetBrand($subject)
+	{
+		// TODO: Implement GetBrand() method.
+	}
+
+	/**
+	 * Получить ширину шины
+	 * @param $subject
+	 * @return string
+	 */
+	function GetWidth($subject)
+	{
+		// TODO: Implement GetWidth() method.
+	}
+
+	/**
+	 * Получить профиль шины
+	 * @param $subject
+	 * @return string
+	 */
+	function GetHeight($subject)
+	{
+		// TODO: Implement GetHeight() method.
+	}
+
+	/**
+	 * Получить тип конструкции
+	 * @param $subject
+	 * @return string
+	 */
+	function GetConstructionType($subject)
+	{
+		// TODO: Implement GetConstructionType() method.
+	}
+
+	/**
+	 * Получить диаметр шины
+	 * @param $subject
+	 * @return string
+	 */
+	function GetDiameter($subject)
+	{
+		// TODO: Implement GetDiameter() method.
+	}
+
+	/**
+	 * Получить индекс нагрузки
+	 * @param $subject
+	 * @return string
+	 */
+	function GetLoadIndex($subject)
+	{
+		// TODO: Implement GetLoadIndex() method.
+	}
+
+	/**
+	 * Получить индекс скорости
+	 * @param $subject
+	 * @return string
+	 */
+	function GetSpeedIndex($subject)
+	{
+		// TODO: Implement GetSpeedIndex() method.
+	}
+
+	/**
+	 * Получить runFlat
+	 * @param $subject
+	 * @return string
+	 */
+	function GetRunFlat($subject)
+	{
+		// TODO: Implement GetRunFlat() method.
+	}
+
+	/**
+	 * Получить имя сайта
+	 * @return string
+	 */
+	function GetSiteName()
+	{
+		// TODO: Implement GetSiteName() method.
+	}
+
+	/**
+	 * Получить url спарсенного товара
+	 * @return string
+	 */
+	function GetParseUrl()
+	{
+		// TODO: Implement GetParseUrl() method.
+	}
+
+	/**
+	 * Получить имя модели
+	 * @param $subject
+	 * @return string
+	 */
+	function GetProductType($subject)
+	{
+		// TODO: Implement GetProductType() method.
 	}
 }

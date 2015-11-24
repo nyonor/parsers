@@ -22,11 +22,22 @@ abstract class RivalParserBase {
     protected $_urlPattern;
 
     /**
+     * @var $_dbController IDbController
+     */
+    protected $_dbController;
+
+    protected $_allModels;
+
+    /**
      * @param $urlPattern string
      * Url сайта для парсинга
      */
     public function __construct($urlPattern) {
         $this->_urlPattern = $urlPattern;
+    }
+
+    public function SetIDbController(IDbController $iDbController) {
+        $this->_dbController = $iDbController;
     }
 
     /**
@@ -41,4 +52,11 @@ abstract class RivalParserBase {
      * @return string
      */
     public abstract function GetSiteToParseUrl();
+
+    /**
+     * Возвращает готовый объект curl для запросов
+     * @param $url
+     * @return resource
+     */
+    protected abstract function GetCurl($url);
 }

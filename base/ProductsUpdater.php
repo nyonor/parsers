@@ -40,7 +40,7 @@ class ProductsUpdater implements IProductsUpdater
 		foreach ($this->_xmlContent as $productXml) {
 			$productTireModel = new ProductTireModel();
 			$productTireModel->brand = strtoupper((string)$productXml->brand);
-			$productTireModel->cae = strtolower((string)$productXml->code);
+			$productTireModel->cae = $productXml->code;
 			$productTireModel->constructionType = strtolower((string)$productXml->constr);
 
 			$seasonClass = SeasonModel::Factory((string)$productXml->season);
@@ -70,6 +70,8 @@ class ProductsUpdater implements IProductsUpdater
 
 
 	protected function GetProductsFilePath() {
+		//TODO: используй url на сервере!
 		return getcwd() . self::LOCAL_PRODUCTS_FILE_REL_PATH;
+		//return self::TOCHKI_PRODUCTS_TIRES_URL;
 	}
 }
