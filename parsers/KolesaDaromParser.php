@@ -27,7 +27,7 @@ class KolesaDaromParser extends RivalParserBase implements IParserAdvanced
 		//var_dump(file_get_contents("http://www.kolesa-darom.ru/nn/shiny/letnie/?cur_cc=15772&recNum=50&curPos=0"));die;
 		//организуем цикл пробега курлом по url
 		$currentSprint = 1;
-		$maxSprint = 1;
+		$maxSprint = 0;
 		$brands = $this->_dbController->GetAllBrands();
 		$result = [];
 
@@ -172,6 +172,7 @@ class KolesaDaromParser extends RivalParserBase implements IParserAdvanced
 	 * @return resource
 	 */
 	protected function GetCurl($url) {
+
 		if ($this->_curl != null) {
 			curl_close($this->_curl);
 		}
@@ -185,10 +186,7 @@ class KolesaDaromParser extends RivalParserBase implements IParserAdvanced
 		curl_setopt($this->_curl, CURLOPT_FRESH_CONNECT, true);
 		curl_setopt($this->_curl, CURLOPT_FOLLOWLOCATION, true);
 		curl_setopt($this->_curl, CURLOPT_HEADER, true);
-
-		//TODO: доставать куки автоматом!!!
-		curl_setopt($this->_curl, CURLOPT_COOKIE,
-			"PMBC=3e7d2e54afecc7e867740b5c97fa6086; sid=8nbimj067gmbabuche5t286fs6; _ym_uid=1447065384447654357; basket_items=0; basket_summa=0; basket_sel=0; basket_prices=0; basket_summa_7=0; basket_items_7=0; basket_oplata=0; favor_items=0; favor_sel=0; favor_prices=0; StoreID=104; RandomValue=8923d70c1cfa2fb0690ca3b912600332; __utma=64829877.1099592460.1447065384.1447595814.1447599464.8; __utmb=64829877.6.10.1447599464; __utmc=64829877; __utmz=64829877.1447065384.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); _ym_visorc_4896859=w");
+		curl_setopt($this->_curl, CURLOPT_COOKIE, $this->GetResponseCookies());
 
 		return $this->_curl;
 	}

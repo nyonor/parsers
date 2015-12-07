@@ -90,7 +90,7 @@ trait ProductParametersParserTrait
 	function GetConstructionType($subject)
 	{
 		$diameterCounstructionMatchResult = "";
-		preg_match('/(?:\s|\/)([Rr]|[ZRzr]+)(\d+)(?:\s|)/', $subject, $diameterMatchResult);
+		preg_match('/(?:\s|\/)?([Rr]|[ZRzr]+)(\d+)(?:\s|)?/', $subject, $diameterMatchResult);
 		$construction = $diameterMatchResult[1];
 		$diameter = $diameterMatchResult[2];
 		return $construction;
@@ -104,7 +104,7 @@ trait ProductParametersParserTrait
 	function GetDiameter($subject)
 	{
 		$diameterCounstructionMatchResult = "";
-		preg_match('/(?:\s|\/)([Rr]|[ZRzr]+)(\d+)(?:\s|)/', $subject, $diameterMatchResult);
+		preg_match('/(?:\s|\/)?([Rr]|[ZRzr]+)(\d+)(?:\s|)?/', $subject, $diameterMatchResult);
 		$construction = $diameterMatchResult[1];
 		$diameter = $diameterMatchResult[2];
 		return $diameter;
@@ -117,7 +117,24 @@ trait ProductParametersParserTrait
 	 */
 	function GetLoadIndex($subject)
 	{
-		// TODO: Implement GetLoadIndex() method.
+		$loadIndexMatchResult = "";
+		preg_match('/(J|K|L|M|N|P|Q|R|S|T|U|H|V|VR|W|Y|ZR)?\s?(\d+\/\d+|\d+)/is', $subject, $loadIndexMatchResult);
+
+		if (count($loadIndexMatchResult) >= 3 && !empty($loadIndexMatchResult[2])) {
+			return $loadIndexMatchResult[2];
+		}
+		else {
+			$loadIndexAndSpeedIndexMatchResult = "";
+			preg_match('/(\d+\/\d+)(J|K|L|M|N|P|Q|R|S|T|U|H|V|VR|W|Y|ZR)|(\d+)(J|K|L|M|N|P|Q|R|S|T|U|H|V|VR|W|Y|ZR)/is', $subject,
+				$loadIndexAndSpeedIndexMatchResult);
+			$loadIndex = $loadIndexAndSpeedIndexMatchResult[1] != null ? $loadIndexAndSpeedIndexMatchResult[1]
+				:$loadIndexAndSpeedIndexMatchResult[3];
+			//$speedIndex = $loadIndexAndSpeedIndexMatchResult[2] != null ? $loadIndexAndSpeedIndexMatchResult[2]
+			//	:$loadIndexAndSpeedIndexMatchResult[4];
+
+			return $loadIndex;
+		}
+
 	}
 
 	/**
@@ -127,7 +144,24 @@ trait ProductParametersParserTrait
 	 */
 	function GetSpeedIndex($subject)
 	{
-		// TODO: Implement GetSpeedIndex() method.
+		//var_dump($subject);
+		$loadIndexMatchResult = "";
+		preg_match('/(J|K|L|M|N|P|Q|R|S|T|U|H|V|VR|W|Y|ZR)?\s?(\d+\/\d+|\d+)/is', $subject, $loadIndexMatchResult);
+
+		if (count($loadIndexMatchResult) >= 2 && !empty($loadIndexMatchResult[1])) {
+			return $loadIndexMatchResult[1];
+		}
+		else {
+			$loadIndexAndSpeedIndexMatchResult = "";
+			preg_match('/(\d+\/\d+)(J|K|L|M|N|P|Q|R|S|T|U|H|V|VR|W|Y|ZR)|(\d+)(J|K|L|M|N|P|Q|R|S|T|U|H|V|VR|W|Y|ZR)/is', $subject,
+				$loadIndexAndSpeedIndexMatchResult);
+			//$loadIndex = $loadIndexAndSpeedIndexMatchResult[1] != null ? $loadIndexAndSpeedIndexMatchResult[1]
+			//	:$loadIndexAndSpeedIndexMatchResult[3];
+			$speedIndex = $loadIndexAndSpeedIndexMatchResult[2] != null ? $loadIndexAndSpeedIndexMatchResult[2]
+				:$loadIndexAndSpeedIndexMatchResult[4];
+
+			return $speedIndex;
+		}
 	}
 
 	/**

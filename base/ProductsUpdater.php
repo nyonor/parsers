@@ -66,12 +66,22 @@ class ProductsUpdater implements IProductsUpdater
 	 */
 	protected function LoadSimpleXmlContent() {
 		$this->_xmlContent = simplexml_load_file($this->GetProductsFilePath());
+		//$this->_xmlContent = simplexml_load_string($this->GetProductsFilePath());
 	}
 
 
 	protected function GetProductsFilePath() {
 		//TODO: используй url на сервере!
+		$this->DownloadFile();
 		return getcwd() . self::LOCAL_PRODUCTS_FILE_REL_PATH;
-		//return self::TOCHKI_PRODUCTS_TIRES_URL;
+	}
+
+	protected function DownloadFile() {
+		$f = fopen(getcwd().self::LOCAL_PRODUCTS_FILE_REL_PATH,'w');
+		$curl = curl_init(self::TOCHKI_PRODUCTS_TIRES_URL);
+		curl_setopt($curl,CURLOPT_CONNECTTIMEOUT,0);
+		curl_setopt($curl,CURLOPT_FILE,$f);
+		$result = curl_exec($curl);
+		curl_close($curl);
 	}
 }

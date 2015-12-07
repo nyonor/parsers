@@ -28,6 +28,8 @@ abstract class RivalParserBase {
 
     protected $_allModels;
 
+    protected $_curlResponseCookies;
+
     /**
      * @param $urlPattern string
      * Url сайта для парсинга
@@ -59,4 +61,26 @@ abstract class RivalParserBase {
      * @return resource
      */
     protected abstract function GetCurl($url);
+
+    public function GetResponseCookies() {
+        if ($this->_curlResponseCookies == null) {
+            $curl = curl_init($this->GetSiteToParseUrl());
+            curl_setopt($curl, CURLOPT_URL, $this->GetSiteToParseUrl());
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER,1);
+            curl_setopt($curl, CURLOPT_USERAGENT,
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.80 Safari/537.36");
+            curl_setopt($curl, CURLOPT_AUTOREFERER, true);
+            curl_setopt($curl, CURLOPT_FRESH_CONNECT, true);
+            curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($curl, CURLOPT_HEADER, true);
+            $response = curl_exec($curl);
+            preg_match_all('/^Set-Cookie:\s*([^;]*)/mi', $response, $matches);
+            if (count($matches) > 1)
+                $this->_curlResponseCookies = $matches[1][1];
+            curl_close($curl);
+            sleep(3);
+        }
+
+        return $this->_curlResponseCookies;
+    }
 }

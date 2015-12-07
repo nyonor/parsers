@@ -257,8 +257,9 @@ class KolesoRussiaParser extends RivalParserBase implements IProductParametersPa
 		}
 
 		$this->_curl = curl_init($url);
-		curl_setopt($this->_curl,CURLOPT_URL,$url);
-		curl_setopt($this->_curl,CURLOPT_RETURNTRANSFER,1);
+		curl_setopt($this->_curl,CURLOPT_URL, $url);
+		curl_setopt($this->_curl,CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($this->_curl, CURLOPT_COOKIE, $this->GetResponseCookies());
 
 		return $this->_curl;
 	}
