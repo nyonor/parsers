@@ -219,6 +219,7 @@ class RivalParseHub {
     public function ProcessParsedDataFromInjectedParserToDB($shouldTruncateOldData = true) {
 
         //начинаем парсинг
+        $this->_currentParser->SetIDbController($this->_dbController);
         $parsedModel = $this->_currentParser->Parse($this->_dbController);
 
         $this->_lastParseResults = $parsedModel;

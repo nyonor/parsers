@@ -63,7 +63,7 @@ class ShinaWestParser extends RivalParserBase implements IProductParametersParse
 					break;
 				}
 
-				//TODO: сделай проверку на пустой каталог
+				//проверка на пустой каталог
 				if (empty($strHtmlDom->find('div.mainContent figure', 0)) == true) {
 					var_dump("BREAK!!!");
 					break;
