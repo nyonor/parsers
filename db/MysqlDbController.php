@@ -402,4 +402,15 @@ class MysqlDbController implements IDbController
 	function __destruct() {
 		$this->_lastPreparedStatementsArray = null;
 	}
+
+	/**
+	 * @return TypeSizeModel[]
+	 */
+	function GetAllTypeSizes()
+	{
+		$sql = "SELECT Products.width as 'width', Products.height as 'height', Products.diameter as 'diameter'
+				FROM Products GROUP BY width, height, diameter";
+		$sqlRes = $this->_db->query($sql)->fetchAll(PDO::FETCH_CLASS, "TypeSizeModel");
+		return $sqlRes;
+	}
 }

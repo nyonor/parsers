@@ -48,7 +48,7 @@ class CsvRenderer implements IRenderer
 			$row[] = $comparisonResult->season;
 			$row[] = $comparisonResult->runFlat;
 			$row[] = $comparisonResult->quantity;
-			$row[] = $comparisonResult->price;
+			$row[] = (int)$comparisonResult->price;
 			$row[] = $comparisonResult->shouldCheckByOperator != null && $comparisonResult->shouldCheckByOperator == true ? 1 : 0;
 			fputcsv($output, array_values($row), ';', ' ');
 		}

@@ -134,4 +134,12 @@ class MongoDbController implements IDbController
 	{
 		// TODO: Implement FindInComparedByUrl() method.
 	}
+
+	/**
+	 * @return TypeSizeModel[]
+	 */
+	function GetAllTypeSizes()
+	{
+		// TODO: Implement GetAllTypeSizes() method.
+	}
 }

@@ -59,6 +59,11 @@ interface IDbController
 	function GetAllBrands();
 
 	/**
+	 * @return TypeSizeModel[]
+	 */
+	function GetAllTypeSizes();
+
+	/**
 	 * Связывает результаты сопоставления в соответствии с релевантностью
 	 * @param $parsedResultId int
 	 * @param $productCae string
