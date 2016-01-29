@@ -38,8 +38,8 @@ class ShinserviceParser extends RivalParserBase implements IProductParametersPar
 				continue;
 			}
 
-			//$url = sprintf($this->_urlPattern, $typeSizeModel->width, $typeSizeModel->height, $typeSizeModel->diameter);
-			$url = "http://www.shinservice.ru/search/ALL/winter/255-40-R17/";
+			$url = sprintf($this->_urlPattern, $typeSizeModel->width, $typeSizeModel->height, $typeSizeModel->diameter);
+			//$url = "http://www.shinservice.ru/search/ALL/winter/255-40-R17/";
 
 			//continue;
 
@@ -66,6 +66,9 @@ class ShinserviceParser extends RivalParserBase implements IProductParametersPar
 
 				//brand
 				$rivalTireModel->brand = $this->GetBrandWithList($rawTitle, $allBrands);
+
+				if ($rivalTireModel->brand == null)
+					continue;
 
 				//model
 				$modelRawStr = str_ireplace($rivalTireModel->brand, '', $rawTitle);
