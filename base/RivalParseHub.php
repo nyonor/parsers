@@ -22,7 +22,8 @@ define ("NODE_VAR_NAME", "node");
 define ("PATH_TO_PARSED_FILES", "/files");
 
 
-class RivalParseHub {
+class RivalParseHub implements IParseHub
+{
 
     /**
      * Если установлен в true, то хаб будет сначала обновлять номенклатуру и лишь затем выполнять парсинг
@@ -137,7 +138,7 @@ class RivalParseHub {
      * Для получения экземпляра IProductsUpdater используй этот метод!
      * @return IProductsUpdater|ProductsUpdater
      */
-    public function GetProductsUpdater() {
+    protected function GetProductsUpdater() {
         if ($this->_productsUpdater == null) {
             $this->_productsUpdater = new ProductsUpdater($this->_dbController);
         }

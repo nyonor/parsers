@@ -4,9 +4,52 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "88ebe788e540fc096b208ad8fcb2c171",
-    "content-hash": "7889409bbbc79804417d161e012d1b9b",
+    "hash": "50618ce013b7f1e8018dd910c7e6d7e0",
+    "content-hash": "b1018cc765235ae9a876de027f76e988",
     "packages": [
+        {
+            "name": "aterrien/forp-profiler",
+            "version": "1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/aterrien/forp-PHP-profiler.git",
+                "reference": "e3fd39bd93a9f4cae7d41f8a90baece6ba6642f7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/aterrien/forp-PHP-profiler/zipball/e3fd39bd93a9f4cae7d41f8a90baece6ba6642f7",
+                "reference": "e3fd39bd93a9f4cae7d41f8a90baece6ba6642f7",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    ""
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Anthony Terrien",
+                    "email": "forp@anthonyterrien.com"
+                }
+            ],
+            "description": "A PHP profiler written in C. forp is a lightweight PHP extension which provides the full call stack of your script, with CPU and memory usage, in a plain PHP Array or JSON output.",
+            "homepage": "https://github.com/aterrien/forp-PHP-profiler",
+            "keywords": [
+                "benchmark",
+                "php",
+                "profiler",
+                "quality"
+            ],
+            "time": "2014-10-12 14:56:04"
+        },
         {
             "name": "sunra/php-simple-html-dom-parser",
             "version": "1.5.0.x-dev",

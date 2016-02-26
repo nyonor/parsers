@@ -13,6 +13,7 @@ error_reporting(E_ALL);
 
 //todo СДЕЛАТЬ АВТОЛОАДЕР!!!!!!
 //require_once "include.php";
+require_once "base/IParseHub.php";
 require_once "base/RivalParserBase.php";
 require_once 'base/RivalParseHub.php';
 require_once 'base/IProductParametersParser.php';

@@ -413,4 +413,25 @@ class MysqlDbController implements IDbController
 		$sqlRes = $this->_db->query($sql)->fetchAll(PDO::FETCH_CLASS, "TypeSizeModel");
 		return $sqlRes;
 	}
+
+	/**
+	 * Поиск всех типоразмеров с указанием модели и бренда
+	 * @param $brand string
+	 * @param $model string
+	 * @return TireModel[]
+	 */
+	function FindTireByModelAndBrand($brand = null, $model)
+	{
+		$sqlPart = "SELECT * FROM Products WHERE ";
+		if($brand != null) {
+			$sqlPart .= "brand LIKE '%".$brand."%' AND ";
+		}
+		$sqlPart .= "model = '".$model."'";
+		$sql = $sqlPart;
+		var_dump($sql);
+		$statement = $this->_db->query($sql);
+		$res = $statement->fetchAll(PDO::FETCH_CLASS, "TireModel");
+
+		return $res;
+	}
 }

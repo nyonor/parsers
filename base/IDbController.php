@@ -89,4 +89,12 @@ interface IDbController
 	 * @return ComparisonResult[] | boolean
 	 */
 	function FindInComparedByUrl($siteUrl);
+
+	/**
+	 * Поиск всех типоразмеров с указанием модели и бренда
+	 * @param $brand string null
+	 * @param $model string
+	 * @return TireModel[]
+	 */
+	function FindTireByModelAndBrand($brand = null, $model);
 }
