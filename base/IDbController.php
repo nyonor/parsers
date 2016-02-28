@@ -94,7 +94,7 @@ interface IDbController
 	 * Поиск всех типоразмеров с указанием модели и бренда
 	 * @param $brand string null
 	 * @param $model string
-	 * @return TireModel[]
+	 * @return ProductTireModel[]
 	 */
 	function FindTireByModelAndBrand($brand = null, $model);
 }

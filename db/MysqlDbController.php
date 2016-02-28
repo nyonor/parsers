@@ -428,9 +428,9 @@ class MysqlDbController implements IDbController
 		}
 		$sqlPart .= "model = '".$model."'";
 		$sql = $sqlPart;
-		var_dump($sql);
+		//var_dump($sql);
 		$statement = $this->_db->query($sql);
-		$res = $statement->fetchAll(PDO::FETCH_CLASS, "TireModel");
+		$res = $statement->fetchAll(PDO::FETCH_CLASS, "ProductTireModel");
 
 		return $res;
 	}

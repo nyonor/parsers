@@ -147,7 +147,7 @@ class MongoDbController implements IDbController
 	 * Поиск всех типоразмеров с указанием модели и бренда
 	 * @param $brand string
 	 * @param $model string
-	 * @return TireModel[]
+	 * @return ProductTireModel[]
 	 */
 	function FindTireByModelAndBrand($brand = null, $model)
 	{

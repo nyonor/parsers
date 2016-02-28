@@ -34,6 +34,7 @@ require_once 'renderers/CsvRenderer.php';
 require_once 'sys/Timer.php';
 require __DIR__ . '/vendor/autoload.php';
 require_once 'sys/MyLogger.php';
+require_once 'models/TireModelMinPriceInfo.php';
 
 $hub = new RivalParseHub();
 $db = new MysqlDbController();

@@ -19,8 +19,19 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 	 * @var HtmlDomParser
 	 */
 	protected $_htmlDomParser;
-
 	protected $_allTypeSizes;
+	protected $_currentParsingBrand;
+	protected $_currentParsingModel;
+
+	/**
+	 * @var TireModelMinPriceInfo[]
+	 */
+	protected $_results;
+
+	/**
+	 * @var ProductTireModel[]
+	 */
+	protected $_ourTyresByCurrentModel;
 
 	const SITE_URL = "market.yandex.ru";
 	const MAIN_URL_PART = "https://market.yandex.ru";
@@ -52,6 +63,8 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		$this->_htmlDomParser = $htmlDomParser;
 		$brandsPageDom = $htmlDomParser->str_get_html($rawRes);
 
+		$results = [];
+
 		//бежим по НАШИМ брендам
 		foreach($fakeBrands as $brandName) { //todo вместо $fakeBrands должны быть $ourBrands
 
@@ -61,13 +74,17 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				//нашли!
 				if ($vendorAnchorDomElement->plaintext == $brandName) {
 
+					//текущий бренд парсинга
+					$this->_currentParsingBrand = $brandName;
+
 					//пройдем по ссылке на бренд в раздел моделей
 					$brandHref = $vendorAnchorDomElement->href;
 
 					sleep(rand(3,7));
 
 					$this->ParseModelsPage($brandHref);
-					MyLogger::WriteToLog("Brand complete!", LOG_ERR);
+					MyLogger::WriteToLog("Brand ".$this->_currentParsingBrand." complete!", LOG_ERR);
+					$this->_currentParsingBrand = null;
 
 					die; //todo УБРАТЬ в РЕЛИЗЕ или при финальном тестировании
 				}
@@ -78,7 +95,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 
 		}
 
-
+		return $this->_results; //todo данный класс должен наследовать от расширенного класса RivalParserBase! Так как возвращает иной тип!
 	}
 
 	protected function ParseModelsPage($brandHref) {
@@ -118,9 +135,17 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 			//бежим по карточкам моделей
 			foreach($modelsDom->find(".snippet-card") as $modelCardDom) {
 
+				/**
+				 * @var $modelCardDom HtmlDomParser
+				 */
 				$modelNameTrimmed = trim($modelCardDom->find(".snippet-card__header-text",0)->plaintext);
 
 				MyLogger::WriteToLog($modelNameTrimmed, LOG_ERR);
+
+				//отделим название модели от бренда и сохраним текущую модель парсинга
+				$this->_currentParsingModel = trim(str_ireplace($this->_currentParsingBrand, '',
+					str_replace("&nbsp;", '', $modelNameTrimmed)));
+				MyLogger::WriteToLog("Чистая модель ".$this->_currentParsingModel, LOG_ERR);
 
 				//нужно ли продолжать...?
 				if ($modelNameTrimmed == $firstModelName) {
@@ -134,10 +159,20 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 
 				}
 
-				//цикл типоразмеров
-				$typeSizeHref = $modelCardDom->find(".snippet-card__action a",0)->href;
-				$this->ParseTypeSizePage($typeSizeHref);
+				$ourTires = $this->_dbController
+					->FindTireByModelAndBrand(null, $this->_currentParsingModel);
 
+				//если у нас есть такие модели
+				if (count($ourTires) > 0) {
+
+					$this->_ourTyresByCurrentModel = $ourTires;
+					//цикл типоразмеров
+					$typeSizeHref = $modelCardDom->find(".snippet-card__action a", 0)->href;
+					$this->ParseTypeSizePage($typeSizeHref);
+					$this->_ourTyresByCurrentModel = null;
+					MyLogger::WriteToLog("MODEL " . $this->_currentParsingModel . " is DONE!", LOG_ERR);
+					$this->_currentParsingModel = null;
+				}
 
 				die; //todo УБРАТЬ в РЕЛИЗЕ или при финальном тестировании
 
@@ -158,16 +193,32 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 	public function ParseTypeSizePage($typeSizeHref) {
 
 		$yandexDiameterParams = [
+			12 => '&gfilter=2142418420%3A-5066796',
 			13 => '&gfilter=2142418420%3A-5066797',
 			14 => '&gfilter=2142418420%3A-5066798',
 			15 => '&gfilter=2142418420%3A-5066799',
 			16 => '&gfilter=2142418420%3A-5066800',
+			16.5 => '&gfilter=2142418420%3A-6578359',
 			17 => '&gfilter=2142418420%3A-5066801',
-			18 => '&gfilter=2142418420%3A-5066802'
+			18 => '&gfilter=2142418420%3A-5066802',
+			19 => '&gfilter=2142418420%3A-5066803',
+			20 => '&gfilter=2142418420%3A-5066825',
+			21 => '&gfilter=2142418420%3A-5066826',
+			22 => '&gfilter=2142418420%3A-5066827',
+			23 => '&gfilter=2142418420%3A-5066828',
+			24 => '&gfilter=2142418420%3A-5066829',
+			25 => '&gfilter=2142418420%3A-5066830',
+			26 => '&gfilter=2142418420%3A-5066831',
+			28 => '&gfilter=2142418420%3A-5066833',
+			30 => '&gfilter=2142418420%3A-5066856',
 		];
 
 		$yandexWidthParams = [
+			125 => '&gfilter=2142418424%3A-5113915',
+			135 => '&gfilter=2142418424%3A-5113946',
+			145 => '&gfilter=2142418424%3A-5113977',
 			155 => '&gfilter=2142418424%3A-5114008',
+			165 => '&gfilter=2142418424%3A-5114039',
 			175 => '&gfilter=2142418424%3A-5114070',
 			185 => '&gfilter=2142418424%3A-5114101',
 			195 => '&gfilter=2142418424%3A-5114132',
@@ -175,17 +226,43 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 			215 => '&gfilter=2142418424%3A-5114845',
 			225 => '&gfilter=2142418424%3A-5114876',
 			235 => '&gfilter=2142418424%3A-5114907',
-			245 => '&gfilter=2142418424%3A-5114938'
+			245 => '&gfilter=2142418424%3A-5114938',
+			255 => '&gfilter=2142418424%3A-5114969',
+			265 => '&gfilter=2142418424%3A-5115000',
+			275 => '&gfilter=2142418424%3A-5115031',
+			285 => '&gfilter=2142418424%3A-5115062',
+			295 => '&gfilter=2142418424%3A-5115093',
+			305 => '&gfilter=2142418424%3A-5115775',
+			315 => '&gfilter=2142418424%3A-5115806',
+			325 => '&gfilter=2142418424%3A-5115837',
+			335 => '&gfilter=2142418424%3A-5115868',
+			345 => '&gfilter=2142418424%3A-5115899',
+			355 => '&gfilter=2142418424%3A-5115930',
+			365 => '&gfilter=2142418424%3A-5115961',
+			375 => '&gfilter=2142418424%3A-5115992',
+			385 => '&gfilter=2142418424%3A-5116023',
+			395 => '&gfilter=2142418424%3A-5116054',
+			405 => '&gfilter=2142418424%3A-5116736',
+			455 => '&gfilter=2142418424%3A-5116891'
 		];
 
 		$yandexHeightParams = [
+			25 => '&gfilter=2142418422%3A-5066828',
+			30 => '&gfilter=2142418422%3A-5066854',
+			35 => '&gfilter=2142418422%3A-5066859',
 			40 => '&gfilter=2142418422%3A-5066885',
 			45 => '&gfilter=2142418422%3A-5066890',
 			50 => '&gfilter=2142418422%3A-5066916',
 			55 => '&gfilter=2142418422%3A-5066921',
 			60 => '&gfilter=2142418422%3A-5066947',
 			65 => '&gfilter=2142418422%3A-5066952',
-			70 => '&gfilter=2142418422%3A-5066978'
+			70 => '&gfilter=2142418422%3A-5066978',
+			75 => '&gfilter=2142418422%3A-5066983',
+			80 => '&gfilter=2142418422%3A-5067009',
+			85 => '&gfilter=2142418422%3A-5067014',
+			90 => '&gfilter=2142418422%3A-5067040',
+			95 => '&gfilter=2142418422%3A-5067045',
+			105 => '&gfilter=2142418422%3A-5113855'
 		];
 
 		$yandexSpeedIndexParams = [
@@ -206,6 +283,19 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 			"Z" => '&gfilter=2142418412%3A-1694507230'
 		];
 
+		$yandexSpikesParams = [
+			true => '&gfilter=2142418415%3Aselect',
+			false => '&gfilter=2142418415%3Aexclude'
+		];
+
+		$yandexSeasonParams = [
+			SeasonModel::ALL_SEASONS => '&gfilter=2142418426%3A-2022570288',
+			SeasonModel::WINTER => '&gfilter=2142418426%3A-1861921444',
+			SeasonModel::SUMMER => '&gfilter=2142418426%3A-1973846231'
+		];
+
+		$yandexRunflatParam = '&gfilter=2142418417%3Aselect';
+
 		$yandexLoadIndexPattern = "%d~%d";
 		$yandexLoadIndex = "&gfilter=2142418414%3A";
 
@@ -213,13 +303,79 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		 * Начнем опрашивать страницу типоразмеров
 		 */
 
-		$url = self::MAIN_URL_PART . $typeSizeHref . self::TYPESIZE_PAGE_SORT_BY_PRICE_PARAM;
-		var_dump($url);
+		//var_dump($this->_ourTyresByCurrentModel);die;
 
+		//бежим по нашим типоразмерам в зависимости от текущего бренда и модели
+		foreach($this->_ourTyresByCurrentModel as $ourTire) {
 
+			/*
+			 * формируем url на основе данных модели
+			 * и данных по параметрам запроса yandexMarket
+			 */
 
+			$url = self::MAIN_URL_PART . $typeSizeHref . self::TYPESIZE_PAGE_SORT_BY_PRICE_PARAM;
 
+			//диаметр
+			$url .= $yandexDiameterParams[(real)$ourTire->diameter];
 
+			//ширина
+			$url .= $yandexWidthParams[(real)$ourTire->width];
+
+			//высота (профиль)
+			$url .= $yandexHeightParams[(real)$ourTire->height];
+
+			//индекс скорости
+			$si = str_replace(')','',str_replace('(','',strtoupper($ourTire->speedIndex)));
+			$url .= $yandexSpeedIndexParams[$si];
+
+			//нагрузка
+			$fromAndTo = explode('/',$ourTire->loadIndex);
+			$url .= count($fromAndTo) > 1 ?
+				$yandexLoadIndex . sprintf($yandexLoadIndexPattern, $fromAndTo[1],$fromAndTo[0]) :
+				$yandexLoadIndex . sprintf($yandexLoadIndexPattern, $fromAndTo[0], $fromAndTo[0]);
+
+			MyLogger::WriteToLog($url, LOG_ERR);
+
+			/*
+			 * Cпарсим дополнительные данные:
+			 * Мин. цену и магазин
+			 */
+
+			sleep(rand(15, 20));
+
+			$curl = $this->GetCurl($url);
+			$rawRes = curl_exec($curl);
+
+			$typeSizeDom = $this->_htmlDomParser->str_get_html($rawRes);
+
+			$div = $typeSizeDom->find(".snippet-card .snippet-card__price",1); //Это важно! (1),
+			// так как первым результатом яндекс маркет выдает совершенно "левый" результат.
+			// Видимо проплаченный
+
+			if ($div != null) {
+
+				$minModel = new TireModelMinPriceInfo();
+
+				//парсим минимальную цену
+				$minModel->minimalPrice = trim(str_replace('&nbsp;', '', $div->plaintext));
+
+				//todo парси url магазина!
+
+				//todo парси название магазина!
+
+				//текущий url яндекс маркета
+				$minModel->yandexMarketUrl = $url;
+
+				MyLogger::WriteToLog($ourTire->cae . " ...DONE!!!", LOG_ERR);
+
+				$this->_results[] = $minModel;
+
+			} else {
+
+				MyLogger::WriteToLog($ourTire->cae . "... CANT FIND!!!", LOG_ERR);
+
+			}
+		}
 	}
 
 	/**

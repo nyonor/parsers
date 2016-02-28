@@ -15,4 +15,14 @@ class MyLogger
 		closelog();
 
 	}
+
+	public static function WriteObjectWithVarDump($object, $logLevelConstant) {
+
+		ob_start();                    // start buffer capture
+		var_dump( $object );           // dump the values
+		$contents = ob_get_contents(); // put the buffer into a variable
+		ob_end_clean();                // end capture
+		self::WriteToLog( $contents, $logLevelConstant );
+
+	}
 }
