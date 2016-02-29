@@ -35,9 +35,13 @@ require_once 'sys/Timer.php';
 require __DIR__ . '/vendor/autoload.php';
 require_once 'sys/MyLogger.php';
 require_once 'models/TireModelMinPriceInfo.php';
+require_once 'base/IAggregatorDbController.php';
+require_once 'base/AggregatorParseHub.php';
+require_once 'db/AggregatorMysqlDbController.php';
 
-$hub = new RivalParseHub();
-$db = new MysqlDbController();
+
+$hub = new AggregatorParseHub();
+$db = new AggregatorMysqlDbController();
 $hub->InjectDBController($db);
 
 //все и вся
@@ -46,7 +50,9 @@ $parser = new YandexMarketParser($urlPattern);
 $hub->InjectParser($parser)
 	->ProcessParsedDataFromInjectedParserToDB(true);
 
-$comparedResult = $hub->GetComparingResult(YandexMarketParser::SITE_URL);
+die; //todo доделать после того как будет заполнена бд
+
+$comparedResult = $hub->GetComparingResult();
 
 $renderer = new CsvRenderer(str_replace('.','',YandexMarketParser::SITE_URL));
 $renderer->Render($comparedResult);

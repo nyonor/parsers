@@ -7,6 +7,8 @@
  * Time: 11:24
  */
 
+// todo данный класс должен наследовать (или как тут принято говорить расширяться) от расширенного класса RivalParserBase! Так как возвращает иной тип!
+
 use Sunra\PhpSimple\HtmlDomParser;
 
 class YandexMarketParser extends RivalParserBase implements IProductParametersParser
@@ -48,7 +50,9 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		$allTypeSizes = $this->_dbController->GetAllTypeSizes();
 		$this->_allTypeSizes = $allTypeSizes;
 
-		$fakeBrands = ['Dunlop'];
+		//var_dump($ourBrands);die;
+
+		//$fakeBrands = ['Dunlop'];
 
 		sleep(rand(12,19));
 
@@ -56,7 +60,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		$curl = $this->GetCurl($this->_urlPattern);
 		$rawRes = curl_exec($curl);
 
-		//print_r($rawRes);
+		//print_r($rawRes);die;
 
 		//страница со списком брендов
 		$htmlDomParser = new HtmlDomParser();
@@ -66,7 +70,14 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		$results = [];
 
 		//бежим по НАШИМ брендам
-		foreach($fakeBrands as $brandName) { //todo вместо $fakeBrands должны быть $ourBrands
+		//foreach($fakeBrands as $brandName) { //todo вместо $fakeBrands должны быть $ourBrands
+		foreach($ourBrands as $brandName) {
+
+			$brandName = ucfirst(strtolower($brandName));
+
+			if ($brandName == "Bfgoodrich") {
+				$brandName = "BFGoodrich";
+			}
 
 			//ищем в списке брендов ЯндексМаркета НАШ бренд
 			foreach($brandsPageDom->find(".b-vendor__item a") as $vendorAnchorDomElement) {
@@ -74,28 +85,36 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				//нашли!
 				if ($vendorAnchorDomElement->plaintext == $brandName) {
 
+					MyLogger::WriteToLog($brandName . " " . "WAS FOUND on yandex-market!!!", LOG_ERR);
+
 					//текущий бренд парсинга
 					$this->_currentParsingBrand = $brandName;
 
 					//пройдем по ссылке на бренд в раздел моделей
 					$brandHref = $vendorAnchorDomElement->href;
 
-					sleep(rand(3,7));
+					//var_dump($brandName);die;
+
+					sleep(rand(20, 30));
 
 					$this->ParseModelsPage($brandHref);
-					MyLogger::WriteToLog("Brand ".$this->_currentParsingBrand." complete!", LOG_ERR);
+					MyLogger::WriteToLog("Brand " . $this->_currentParsingBrand . " complete!", LOG_ERR);
 					$this->_currentParsingBrand = null;
 
-					die; //todo УБРАТЬ в РЕЛИЗЕ или при финальном тестировании
-				}
+					//return $this->_results; //todo УБРАТЬ в РЕЛИЗЕ или при финальном тестировании
+				}/* else {
+
+					MyLogger::WriteToLog($brandName. " " . "not found on yandex-market..", LOG_ERR);
+
+				}*/
 
 			}
 
-			sleep(rand(12,18));
+			sleep(rand(22,31));
 
 		}
 
-		return $this->_results; //todo данный класс должен наследовать от расширенного класса RivalParserBase! Так как возвращает иной тип!
+		return $this->_results;
 	}
 
 	protected function ParseModelsPage($brandHref) {
@@ -103,6 +122,9 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		//первый запрос к моделям для получения эффективного url
 		$curl = $this->GetCurl(self::MAIN_URL_PART . $brandHref);
 		$firstModelRawRes = curl_exec($curl);
+
+		//print_r($firstModelRawRes);die; //todo TEST ON RELEASE
+
 		$effectiveUrl = curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
 
 		$partOfUrlPattern = $effectiveUrl;
@@ -110,18 +132,17 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		$shouldContinue = false;
 
 		$firstModelName = null;
-
 		//бежим по страницам моделей бренда
 		do {
 
-			sleep(rand(12, 20));
+			sleep(rand(20, 30));
 
 			$modelsDom = null;
 			//если это не первый запрос к странице моделей
 			if ($firstModelRawRes == null) {
 
 				$url = $partOfUrlPattern.(sprintf("&page=%d", $currentPage));
-				MyLogger::WriteToLog($url,LOG_ERR);//die;
+				//MyLogger::WriteToLog($url,LOG_ERR);//die;
 				$curl = $this->GetCurl($url);
 				$rawRes = curl_exec($curl);
 				$modelsDom = $this->_htmlDomParser->str_get_html($rawRes);
@@ -132,6 +153,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 
 			}
 
+			//$stopIndex = 1; //todo удалить после теста...  для начала пройдем хотябы две модели...
 			//бежим по карточкам моделей
 			foreach($modelsDom->find(".snippet-card") as $modelCardDom) {
 
@@ -140,7 +162,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				 */
 				$modelNameTrimmed = trim($modelCardDom->find(".snippet-card__header-text",0)->plaintext);
 
-				MyLogger::WriteToLog($modelNameTrimmed, LOG_ERR);
+				MyLogger::WriteToLog("Doing model..." . $modelNameTrimmed, LOG_ERR);
 
 				//отделим название модели от бренда и сохраним текущую модель парсинга
 				$this->_currentParsingModel = trim(str_ireplace($this->_currentParsingBrand, '',
@@ -172,15 +194,29 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 					$this->_ourTyresByCurrentModel = null;
 					MyLogger::WriteToLog("MODEL " . $this->_currentParsingModel . " is DONE!", LOG_ERR);
 					$this->_currentParsingModel = null;
+
+				} else {
+
+					MyLogger::WriteToLog("MODEL " . $this->_currentParsingModel . " NOT found on yandex-market...", LOG_ERR);
+					$this->_currentParsingModel = null;
 				}
 
-				die; //todo УБРАТЬ в РЕЛИЗЕ или при финальном тестировании
+				//return; //todo УБРАТЬ в РЕЛИЗЕ или при финальном тестировании
+
+				/*
+				//todo Удалить после тестирования
+				$stopIndex++;
+				if ($stopIndex > 2) {
+					MyLogger::WriteToLog("Две модели пройдены!!!!", LOG_ERR);
+					die;
+				}
+				*/
 
 			}
 
 			$firstModelName = trim($modelsDom->find(".snippet-card__header-text",0)->plaintext);
 
-			MyLogger::WriteToLog("PAGE NUM " . $currentPage, LOG_ERR);
+			MyLogger::WriteToLog("Model PAGE NUM " . $currentPage, LOG_ERR);
 
 			$firstModelRawRes = null;
 
@@ -334,21 +370,22 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				$yandexLoadIndex . sprintf($yandexLoadIndexPattern, $fromAndTo[1],$fromAndTo[0]) :
 				$yandexLoadIndex . sprintf($yandexLoadIndexPattern, $fromAndTo[0], $fromAndTo[0]);
 
-			MyLogger::WriteToLog($url, LOG_ERR);
+			MyLogger::WriteToLog("Trying typesize by url " . $url, LOG_ERR);
 
 			/*
 			 * Cпарсим дополнительные данные:
 			 * Мин. цену и магазин
 			 */
 
-			sleep(rand(15, 20));
+			sleep(rand(20, 32));
 
 			$curl = $this->GetCurl($url);
 			$rawRes = curl_exec($curl);
+			//print_r($rawRes);//die;
 
 			$typeSizeDom = $this->_htmlDomParser->str_get_html($rawRes);
 
-			$div = $typeSizeDom->find(".snippet-card .snippet-card__price",1); //Это важно! (1),
+			$div = $typeSizeDom->find(".snippet-card",1); //Это важно! (1),
 			// так как первым результатом яндекс маркет выдает совершенно "левый" результат.
 			// Видимо проплаченный
 
@@ -357,16 +394,38 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				$minModel = new TireModelMinPriceInfo();
 
 				//парсим минимальную цену
-				$minModel->minimalPrice = trim(str_replace('&nbsp;', '', $div->plaintext));
+				$minPriceTrimmedText = $div->find(".snippet-card__price", 0)->plaintext;
+				$matches = [];
+				preg_match_all('/(\d)/', $minPriceTrimmedText, $matches);
+				$minModel->minimalPrice = (int)implode('',$matches[1]);
 
-				//todo парси url магазина!
+				//парсим url магазина!
+				$rivalStoreTemporaryPartUrl = $div->find(".snippet-card__content .snippet-card__shop a", 0)->href;
+				//$minModel->rivalStoreUrl = $this->GetRealUrl("https:".$rivalStoreTemporaryPartUrl, $url);
 
-				//todo парси название магазина!
+				$minModel->rivalStoreUrl = $rivalStoreTemporaryPartUrl;
+
+				//парсим название магазина!
+				$minModel->rivalStoreName = $div->find(".snippet-card__content .snippet-card__shop a", 0)->plaintext;
 
 				//текущий url яндекс маркета
 				$minModel->yandexMarketUrl = $url;
 
+				//скопируем все остальные свойства на всякий случай
+				$minModel->cae = $ourTire->cae;
+				$minModel->brand = $ourTire->brand;
+				$minModel->constructionType = $ourTire->constructionType;
+				$minModel->diameter = $ourTire->diameter;
+				$minModel->height = $ourTire->height;
+				$minModel->width = $ourTire->width;
+				$minModel->loadIndex = $ourTire->loadIndex;
+				$minModel->runFlat = $ourTire->runFlat;
+				$minModel->speedIndex = $ourTire->speedIndex;
+				$minModel->season = $ourTire->season;
+				$minModel->model = $ourTire->model;
+
 				MyLogger::WriteToLog($ourTire->cae . " ...DONE!!!", LOG_ERR);
+				MyLogger::WriteToLog(json_encode($minModel), LOG_ERR);
 
 				$this->_results[] = $minModel;
 
@@ -375,7 +434,17 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				MyLogger::WriteToLog($ourTire->cae . "... CANT FIND!!!", LOG_ERR);
 
 			}
+			//return; //todo TEST!
 		}
+	}
+
+	public function GetRealUrl($url, $referrer) {
+
+		$curl = $this->GetCurlWithReferrer($url, $referrer);
+		$rawRes = curl_exec($curl);
+		print_r($rawRes);
+		return curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
+
 	}
 
 	/**
@@ -415,5 +484,13 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		//curl_setopt($this->_curl, CURLOPT_COOKIE, $this->GetResponseCookies());
 
 		return $this->_curl;
+	}
+
+	protected function GetCurlWithReferrer($url, $referrer) {
+
+		$curl = $this->GetCurl($url);
+		curl_setopt($curl, CURLOPT_REFERER, $referrer);
+		return $curl;
+
 	}
 }
