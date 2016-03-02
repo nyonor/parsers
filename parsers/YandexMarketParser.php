@@ -11,7 +11,7 @@
 
 use Sunra\PhpSimple\HtmlDomParser;
 
-class YandexMarketParser extends RivalParserBase implements IProductParametersParser
+class YandexMarketParser extends AggregatorParserBase implements IProductParametersParser
 {
 
 	use ProductParametersParserTrait;
@@ -54,11 +54,12 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 
 		//$fakeBrands = ['Dunlop'];
 
-		sleep(rand(12,19));
+		//sleep(rand(12,19));
 
 		//изначально заходим на страницу со списками брендов ЯндексМаркета
-		$curl = $this->GetCurl($this->_urlPattern);
-		$rawRes = curl_exec($curl);
+		//$curl = $this->GetCurl($this->_urlPattern);
+		//$rawRes = curl_exec($curl);
+		$rawRes = $this->Request($this->_urlPattern);
 
 		//print_r($rawRes);die;
 
@@ -70,7 +71,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		$results = [];
 
 		//бежим по НАШИМ брендам
-		//foreach($fakeBrands as $brandName) { //todo вместо $fakeBrands должны быть $ourBrands
+		//foreach($fakeBrands as $brandName) {
 		foreach($ourBrands as $brandName) {
 
 			$brandName = ucfirst(strtolower($brandName));
@@ -85,7 +86,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				//нашли!
 				if ($vendorAnchorDomElement->plaintext == $brandName) {
 
-					MyLogger::WriteToLog($brandName . " " . "WAS FOUND on yandex-market!!!", LOG_ERR);
+					MyLogger::WriteToLog($brandName . " " . "был найден на yandex-market!!!", LOG_ERR);
 
 					//текущий бренд парсинга
 					$this->_currentParsingBrand = $brandName;
@@ -95,7 +96,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 
 					//var_dump($brandName);die;
 
-					sleep(rand(20, 30));
+					//sleep(rand(20, 30));
 
 					$this->ParseModelsPage($brandHref);
 					MyLogger::WriteToLog("Brand " . $this->_currentParsingBrand . " complete!", LOG_ERR);
@@ -120,12 +121,13 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 	protected function ParseModelsPage($brandHref) {
 
 		//первый запрос к моделям для получения эффективного url
-		$curl = $this->GetCurl(self::MAIN_URL_PART . $brandHref);
-		$firstModelRawRes = curl_exec($curl);
+		//$curl = $this->GetCurl(self::MAIN_URL_PART . $brandHref);
+		//$firstModelRawRes = curl_exec($curl);
+		$firstModelRawRes = $this->Request(self::MAIN_URL_PART . $brandHref);
 
 		//print_r($firstModelRawRes);die; //todo TEST ON RELEASE
 
-		$effectiveUrl = curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
+		$effectiveUrl = curl_getinfo($this->_curl, CURLINFO_EFFECTIVE_URL);
 
 		$partOfUrlPattern = $effectiveUrl;
 		$currentPage = 1;
@@ -135,7 +137,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		//бежим по страницам моделей бренда
 		do {
 
-			sleep(rand(20, 30));
+			//sleep(rand(20, 30));
 
 			$modelsDom = null;
 			//если это не первый запрос к странице моделей
@@ -143,8 +145,9 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 
 				$url = $partOfUrlPattern.(sprintf("&page=%d", $currentPage));
 				//MyLogger::WriteToLog($url,LOG_ERR);//die;
-				$curl = $this->GetCurl($url);
-				$rawRes = curl_exec($curl);
+				//$curl = $this->GetCurl($url);
+				//$rawRes = curl_exec($curl);
+				$rawRes = $this->Request($url);
 				$modelsDom = $this->_htmlDomParser->str_get_html($rawRes);
 
 			} else {
@@ -162,12 +165,12 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				 */
 				$modelNameTrimmed = trim($modelCardDom->find(".snippet-card__header-text",0)->plaintext);
 
-				MyLogger::WriteToLog("Doing model..." . $modelNameTrimmed, LOG_ERR);
+				MyLogger::WriteToLog("Нашел модель " . $modelNameTrimmed, LOG_ERR);
 
 				//отделим название модели от бренда и сохраним текущую модель парсинга
 				$this->_currentParsingModel = trim(str_ireplace($this->_currentParsingBrand, '',
 					str_replace("&nbsp;", '', $modelNameTrimmed)));
-				MyLogger::WriteToLog("Чистая модель ".$this->_currentParsingModel, LOG_ERR);
+				MyLogger::WriteToLog("Чистое название модели ".$this->_currentParsingModel, LOG_ERR);
 
 				//нужно ли продолжать...?
 				if ($modelNameTrimmed == $firstModelName) {
@@ -192,12 +195,12 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 					$typeSizeHref = $modelCardDom->find(".snippet-card__action a", 0)->href;
 					$this->ParseTypeSizePage($typeSizeHref);
 					$this->_ourTyresByCurrentModel = null;
-					MyLogger::WriteToLog("MODEL " . $this->_currentParsingModel . " is DONE!", LOG_ERR);
+					MyLogger::WriteToLog("Модель " . $this->_currentParsingModel . " - парсинг завершен.", LOG_ERR);
 					$this->_currentParsingModel = null;
 
 				} else {
 
-					MyLogger::WriteToLog("MODEL " . $this->_currentParsingModel . " NOT found on yandex-market...", LOG_ERR);
+					MyLogger::WriteToLog("Модель " . $this->_currentParsingModel . " в нашем ассортименте не найдена...", LOG_ERR);
 					$this->_currentParsingModel = null;
 				}
 
@@ -216,7 +219,7 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 
 			$firstModelName = trim($modelsDom->find(".snippet-card__header-text",0)->plaintext);
 
-			MyLogger::WriteToLog("Model PAGE NUM " . $currentPage, LOG_ERR);
+			MyLogger::WriteToLog("Страница моделей номер " . $currentPage, LOG_ERR);
 
 			$firstModelRawRes = null;
 
@@ -370,17 +373,18 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				$yandexLoadIndex . sprintf($yandexLoadIndexPattern, $fromAndTo[1],$fromAndTo[0]) :
 				$yandexLoadIndex . sprintf($yandexLoadIndexPattern, $fromAndTo[0], $fromAndTo[0]);
 
-			MyLogger::WriteToLog("Trying typesize by url " . $url, LOG_ERR);
+			MyLogger::WriteToLog("Пробуем найти типоразмер по url " . $url, LOG_ERR);
 
 			/*
 			 * Cпарсим дополнительные данные:
 			 * Мин. цену и магазин
 			 */
 
-			sleep(rand(20, 32));
+			//sleep(rand(20, 32));
 
-			$curl = $this->GetCurl($url);
-			$rawRes = curl_exec($curl);
+			//$curl = $this->GetCurl($url);
+			//$rawRes = curl_exec($curl);
+			$rawRes = $this->Request($url);
 			//print_r($rawRes);//die;
 
 			$typeSizeDom = $this->_htmlDomParser->str_get_html($rawRes);
@@ -424,27 +428,20 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 				$minModel->season = $ourTire->season;
 				$minModel->model = $ourTire->model;
 
-				MyLogger::WriteToLog($ourTire->cae . " ...DONE!!!", LOG_ERR);
+				MyLogger::WriteToLog($ourTire->cae . " ... найден на yandex-market!!!", LOG_ERR);
 				MyLogger::WriteToLog(json_encode($minModel), LOG_ERR);
+
+				$this->_iInstantStore->InstantStoreResult($minModel);
 
 				$this->_results[] = $minModel;
 
 			} else {
 
-				MyLogger::WriteToLog($ourTire->cae . "... CANT FIND!!!", LOG_ERR);
+				MyLogger::WriteToLog($ourTire->cae . "... не найден на yandex-market!!!", LOG_ERR);
 
 			}
 			//return; //todo TEST!
 		}
-	}
-
-	public function GetRealUrl($url, $referrer) {
-
-		$curl = $this->GetCurlWithReferrer($url, $referrer);
-		$rawRes = curl_exec($curl);
-		print_r($rawRes);
-		return curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
-
 	}
 
 	/**
@@ -486,11 +483,56 @@ class YandexMarketParser extends RivalParserBase implements IProductParametersPa
 		return $this->_curl;
 	}
 
-	protected function GetCurlWithReferrer($url, $referrer) {
+	/**
+	 * Делает запрос по url и возвращает результат в виде строки
+	 * @param $url string
+	 * @return string
+	 */
+	public function Request($url) {
 
-		$curl = $this->GetCurl($url);
-		curl_setopt($curl, CURLOPT_REFERER, $referrer);
-		return $curl;
+		$rawRes = null;
 
+		do {
+
+			//выждем время перед запросом
+			sleep(rand(41,62));
+
+			$curl = $this->GetCurl($url);
+			$rawRes = curl_exec($curl);
+
+			/*
+			 * Проверим, может быть нас уже вычислили
+			 * и бросили на страницу с капчей ?!
+			 * Будем делать запрос пока не получим нужный ответ
+			 */
+
+			$parser = new HtmlDomParser();
+			$dom = $parser->str_get_html($rawRes);
+
+			$accessDenied = false;
+
+			//доступ был заблокирован
+			if (strpos($dom->innertext, "вынуждены временно заблокировать")) {
+
+				//освободим ресурсы парсера
+				$dom->clear();
+				unset($parser);
+
+				//логируем блокировку
+				MyLogger::WriteToLog("Запрос заблокирован и выдана капча... ждем...", LOG_ERR);
+
+				//ждем 1 час и 10 минут
+				sleep(60 * 70);
+				$accessDenied = true;
+
+			}
+
+		} while ($accessDenied == true);
+
+		//освободим ресурсы парсера
+		$dom->clear();
+		unset($parser);
+
+		return $rawRes;
 	}
 }

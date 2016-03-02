@@ -18,6 +18,8 @@ require_once "base/RivalParserBase.php";
 require_once 'base/RivalParseHub.php';
 require_once 'base/IProductParametersParser.php';
 require_once 'base/ProductParametersParserTrait.php';
+require_once 'base/IInstantStore.php';
+require_once 'base/AggregatorParserBase.php';
 require_once 'parsers/YandexMarketParser.php';
 require_once 'models/TireModel.php';
 require_once 'models/RivalTireModel.php';
@@ -46,7 +48,7 @@ $hub->InjectDBController($db);
 
 //все и вся
 $urlPattern  = "https://market.yandex.ru/vendors.xml?CAT_ID=109743&hid=90490&track=fr_cm_vendor";
-$parser = new YandexMarketParser($urlPattern);
+$parser = new YandexMarketParser($urlPattern, $hub);
 $hub->InjectParser($parser)
 	->ProcessParsedDataFromInjectedParserToDB(true);
 

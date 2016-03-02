@@ -6,7 +6,7 @@
  * Date: 29.02.16
  * Time: 12:10
  */
-class AggregatorParseHub extends RivalParseHub implements IParseHub
+class AggregatorParseHub extends RivalParseHub implements IInstantStore
 {
 
 	/**
@@ -24,17 +24,40 @@ class AggregatorParseHub extends RivalParseHub implements IParseHub
 		//начинаем парсинг
 		$this->_currentParser->SetIDbController($this->_dbController);
 		$parsedModel = $this->_currentParser->Parse($this->_dbController);
-		$this->_lastParseResults = $parsedModel;
+		/*$this->_lastParseResults = $parsedModel;
 
 		//пишем в бд
 		foreach($this->_lastParseResults as $parseRes) {
 
 			$this->StoreObjectToDB($parseRes);
 
-		}
+		}*/
 
 		return $this;
 
+	}
+
+	/**
+	 * Установка парсера - он содержит всю логику парсинга!
+	 * Метод отличается от метода реализованного предком!!!
+	 * @param RivalParserBase $parser
+	 * @return $this
+	 */
+	public function InjectParser(RivalParserBase $parser) {
+
+		if (is_a($parser, "AggregatorParserBase")) {
+
+			/**
+			 * @var $parser AggregatorParserBase
+			 */
+			$this->_currentParser = $parser;
+			return $this;
+
+		} else {
+
+			throw new InvalidArgumentException("Injected parser should be of AggregatorParserBase class");
+
+		}
 	}
 
 	/**
@@ -48,5 +71,21 @@ class AggregatorParseHub extends RivalParseHub implements IParseHub
 		var_dump($this->_lastParseResults);
 
 		die;//todo!!!!
+	}
+
+	/**
+	 * Должен реализовавывать возможность
+	 * сохранить результат парсинга сразу
+	 * @param $result
+	 */
+	function InstantStoreResult($result)
+	{
+
+		if (is_a($result, "TireModelMinPriceInfo")) {
+
+			$this->StoreObjectToDB($result);
+
+		}
+
 	}
 }

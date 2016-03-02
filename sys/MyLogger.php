@@ -11,7 +11,7 @@ class MyLogger
 	public static function WriteToLog($message, $logLevelConstant) {
 
 		openlog("myScriptLog", LOG_PID | LOG_PERROR, LOG_LOCAL0);
-		syslog($logLevelConstant, $message);
+		syslog($logLevelConstant, date("Y-m-d H:i:s") . " " . $message);
 		closelog();
 
 	}
