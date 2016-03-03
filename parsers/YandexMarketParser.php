@@ -148,6 +148,7 @@ class YandexMarketParser extends AggregatorParserBase implements IProductParamet
 				//$curl = $this->GetCurl($url);
 				//$rawRes = curl_exec($curl);
 				$rawRes = $this->Request($url);
+				//print_r($rawRes);die;
 				$modelsDom = $this->_htmlDomParser->str_get_html($rawRes);
 
 			} else {
@@ -476,7 +477,9 @@ class YandexMarketParser extends AggregatorParserBase implements IProductParamet
 		curl_setopt($this->_curl, CURLOPT_FOLLOWLOCATION, true);
 		curl_setopt($this->_curl, CURLOPT_COOKIEJAR, "files/cookies.txt");
 		curl_setopt($this->_curl, CURLOPT_COOKIEFILE, "files/cookies.txt");
-		//curl_setopt($this->_curl, CURLOPT_PROXY, '37.143.8.59:81');
+		/*curl_setopt($this->_curl, CURLOPT_PROXY, '217.23.7.11');
+		curl_setopt($this->_curl, CURLOPT_PROXYPORT, 8971);
+		curl_setopt($this->_curl, CURLOPT_PROXYUSERPWD, "test:ZJqH1g2e");*/
 		//curl_setopt($this->_curl, CURLOPT_HEADER, true);
 		//curl_setopt($this->_curl, CURLOPT_COOKIE, $this->GetResponseCookies());
 
@@ -494,10 +497,10 @@ class YandexMarketParser extends AggregatorParserBase implements IProductParamet
 
 		do {
 
-			//выждем время перед запросом
-			sleep(rand(41,62));
-
 			$curl = $this->GetCurl($url);
+
+			MyLogger::WriteToLog("Вызываю URL " . $url, LOG_ERR);
+
 			$rawRes = curl_exec($curl);
 
 			/*
@@ -532,6 +535,9 @@ class YandexMarketParser extends AggregatorParserBase implements IProductParamet
 		//освободим ресурсы парсера
 		$dom->clear();
 		unset($parser);
+
+		//выждем время
+		sleep(rand(60,75));
 
 		return $rawRes;
 	}

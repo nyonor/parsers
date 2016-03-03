@@ -31,6 +31,7 @@ class KolesatytParser extends RivalParserBase implements IProductParametersParse
 			$url = sprintf($this->_urlPattern, $currentSprint);
 			$curl = $this->GetCurl($url);
 			$rawRes = curl_exec($curl);
+			print_r($rawRes);die;
 
 			$htmlDom = new HtmlDomParser();
 			$strHtmlDom = $htmlDom->str_get_html($rawRes);
