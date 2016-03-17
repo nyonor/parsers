@@ -24,4 +24,10 @@ abstract class AggregatorParserBase extends RivalParserBase
 	 */
 	public abstract function Request($url);
 
+	/**
+	 * Постпроцессинг данных собранных парсером-аггрегатора
+	 * @return mixed
+	 */
+	public abstract function PostProcess();
+
 }

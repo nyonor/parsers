@@ -46,6 +46,7 @@ class YandexMarketParser extends AggregatorParserBase implements IProductParamet
 	 */
 	public function Parse(IDbController $dbController = null)
 	{
+
 		$ourBrands = $this->_dbController->GetAllBrands();
 		$allTypeSizes = $this->_dbController->GetAllTypeSizes();
 		$this->_allTypeSizes = $allTypeSizes;
@@ -451,7 +452,7 @@ class YandexMarketParser extends AggregatorParserBase implements IProductParamet
 	 */
 	public function GetSiteToParseUrl()
 	{
-		// TODO: Implement GetSiteToParseUrl() method.
+		return self::SITE_URL;
 	}
 
 	/**
@@ -540,5 +541,50 @@ class YandexMarketParser extends AggregatorParserBase implements IProductParamet
 		sleep(rand(60,75));
 
 		return $rawRes;
+	}
+
+	/**
+	 * Постпроцессинг данных собранных парсером-аггрегатора
+	 * @return mixed
+	 */
+	public function PostProcess()
+	{
+
+		$parsedResults = $this->_dbController->GetAllMinimalPriceInfoProductModels();
+
+		foreach($parsedResults as $tireModelMinPriceInfo) {
+
+			//var_dump($tireModelMinPriceInfo);die;
+
+			$url = $tireModelMinPriceInfo->yandexMarketUrl;
+			$rawRes = $this->Request($url);
+
+			$parser = new HtmlDomParser();
+			$dom = $parser->str_get_html($rawRes);
+			$div = $dom->find(".snippet-card",1); //Это важно! (1),
+
+			if ($div != null) {
+
+				//парсим минимальную цену
+				$minPriceTrimmedText = $div->find(".snippet-card__price", 0)->plaintext;
+				$matches = [];
+				preg_match_all('/(\d)/', $minPriceTrimmedText, $matches);
+				$currentDateMinPrice = (int)implode('',$matches[1]);
+
+				//парсим url магазина!
+				$rivalStoreTemporaryPartUrl = $div->find(".snippet-card__content .snippet-card__shop a", 0)->href;
+				//$minModel->rivalStoreUrl = $this->GetRealUrl("https:".$rivalStoreTemporaryPartUrl, $url);
+
+				//парсим название магазина!
+				$storeName = $div->find(".snippet-card__content .snippet-card__shop a", 0)->plaintext;
+
+
+				$tireModelMinPriceInfo->minimalPrice = $currentDateMinPrice;
+				$tireModelMinPriceInfo->rivalStoreUrl = $rivalStoreTemporaryPartUrl;
+				$tireModelMinPriceInfo->rivalStoreName = $storeName;
+
+				$this->_iInstantStore->InstantStoreResult($tireModelMinPriceInfo);
+			}
+		}
 	}
 }

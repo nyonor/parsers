@@ -97,4 +97,17 @@ interface IDbController
 	 * @return ProductTireModel[]
 	 */
 	function FindTireByModelAndBrand($brand = null, $model);
+
+	/**
+	 * Сохранение спарсенного результата
+	 * @param TireModelMinPriceInfo $objectToInsert
+	 */
+	public function AddAggregatorParsingResult($objectToInsert);
+
+	/**
+	 * Возвращает все данные о минимальных цена и конкурентах
+	 * собранные по аггрегатору (ЯндексМаркет)
+	 * @return TireModelMinPriceInfo[]|array|mixed
+	 */
+	public function GetAllMinimalPriceInfoProductModels();
 }

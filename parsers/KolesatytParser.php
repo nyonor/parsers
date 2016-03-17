@@ -26,12 +26,14 @@ class KolesatytParser extends RivalParserBase implements IProductParametersParse
 		$currentSprint = 1;
 		$firstUrl = null;
 		$rivalResult = [];
+		$uniqueCode = null;
+		$shouldContinue = true;
 
 		do {
 			$url = sprintf($this->_urlPattern, $currentSprint);
 			$curl = $this->GetCurl($url);
 			$rawRes = curl_exec($curl);
-			print_r($rawRes);die;
+			//print_r($rawRes);die;
 
 			$htmlDom = new HtmlDomParser();
 			$strHtmlDom = $htmlDom->str_get_html($rawRes);
@@ -39,6 +41,20 @@ class KolesatytParser extends RivalParserBase implements IProductParametersParse
 			if (!method_exists($strHtmlDom,"find"))
 			{
 				break;
+			}
+
+			if ($uniqueCode == null) {
+				$uniqueCode = $strHtmlDom->find(".drives-fit_item-podbor .drives-fit_item_marking span", 0)->plaintext;
+				var_dump($uniqueCode);
+			} else {
+				$uniqueCodeCurrent = $strHtmlDom->find(".drives-fit_item-podbor .drives-fit_item_marking span", 0)->plaintext;
+				MyLogger::WriteToLog($uniqueCode . " VS " . $uniqueCodeCurrent, LOG_ERR);
+				if ($uniqueCode == $uniqueCodeCurrent) {
+					$shouldContinue = false;
+					break;
+				} else {
+					$shouldContinue = true;
+				}
 			}
 
 			foreach($strHtmlDom->find(".drives-fit_item-podbor") as $div) {
@@ -107,17 +123,21 @@ class KolesatytParser extends RivalParserBase implements IProductParametersParse
 						->GetSeasonName();
 				}
 
-				var_dump($rivalTireResult);
+				//var_dump($rivalTireResult);
 
 				$rivalResult[] = $rivalTireResult;
+				MyLogger::WriteToLog("Result count is ..." . count($rivalResult), LOG_ERR);
 			}
+
+			$strHtmlDom->clear();
+			unset($strHtmlDom);
 
 			$currentSprint++;
 
 			$currentUrl = curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
-			//MyLogger::WriteToLog($currentUrl, LOG_WARNING);
+			MyLogger::WriteToLog($currentUrl, LOG_ERR);
 
-			if ($currentUrl == $firstUrl) {
+			/*if ($currentUrl == $firstUrl) {
 				$shouldContinue = false;
 				break;
 			} else {
@@ -126,7 +146,7 @@ class KolesatytParser extends RivalParserBase implements IProductParametersParse
 
 			if ($firstUrl == null) {
 				$firstUrl = curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
-			}
+			}*/
 
 		} while ($shouldContinue == true);
 

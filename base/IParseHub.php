@@ -6,6 +6,10 @@
  * Date: 26.02.16
  * Time: 9:33
  */
+
+/**
+ * Interface IParseHub @deprecated
+ */
 interface IParseHub
 {
 	/**

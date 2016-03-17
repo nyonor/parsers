@@ -19,31 +19,38 @@ class AggregatorParseHub extends RivalParseHub implements IInstantStore
 	 */
 	protected $_lastParseResults;
 
+	/**
+	 * @var AggregatorParserBase
+	 */
+	protected $_currentParser;
+
+	/**
+	 * @param bool|true $shouldTruncateOldData todo параметр не учитывается! все еще
+	 * @return $this
+	 */
 	public function ProcessParsedDataFromInjectedParserToDB($shouldTruncateOldData = true) {
 
 		//начинаем парсинг
 		$this->_currentParser->SetIDbController($this->_dbController);
-		$parsedModel = $this->_currentParser->Parse($this->_dbController);
-		/*$this->_lastParseResults = $parsedModel;
-
-		//пишем в бд
-		foreach($this->_lastParseResults as $parseRes) {
-
-			$this->StoreObjectToDB($parseRes);
-
-		}*/
-
+		$this->_lastParseResults = $this->_currentParser->Parse($this->_dbController);
 		return $this;
+
+	}
+
+	public function PostProcess() {
+
+		$this->_currentParser->SetIDbController($this->_dbController);
+		$this->_currentParser->PostProcess();
 
 	}
 
 	/**
 	 * Установка парсера - он содержит всю логику парсинга!
 	 * Метод отличается от метода реализованного предком!!!
-	 * @param RivalParserBase $parser
+	 * @param AggregatorParserBase|RivalParserBase $parser
 	 * @return $this
 	 */
-	public function InjectParser(RivalParserBase $parser) {
+	public function InjectParser(AggregatorParserBase $parser) {
 
 		if (is_a($parser, "AggregatorParserBase")) {
 
@@ -67,10 +74,20 @@ class AggregatorParseHub extends RivalParseHub implements IInstantStore
 	 */
 	public function GetComparingResult($rivalSiteUrl = null) {
 
-		var_dump("А ТУТ РЕЗУЛЬТАТ!!!");
-		var_dump($this->_lastParseResults);
+		$result = "";
 
-		die;//todo!!!!
+		if($this->_lastParseResults == null) {
+
+			$result = $this->_dbController->GetAllMinimalPriceInfoProductModels();
+
+		} else {
+
+			$result = $this->_lastParseResults;
+
+		}
+
+		return $result;
+
 	}
 
 	/**
@@ -88,4 +105,16 @@ class AggregatorParseHub extends RivalParseHub implements IInstantStore
 		}
 
 	}
+
+	/**
+	 * Сохраняем результат парсинга
+	 * @param $object TireModelMinPriceInfo
+	 * @throws Exception
+	 */
+	protected function StoreObjectToDB($object) {
+		if ($this->_dbController == null)
+			throw new Exception("IDbController should be injected to RivalParserHub!");
+		$this->_dbController->AddAggregatorParsingResult($object);
+	}
+
 }

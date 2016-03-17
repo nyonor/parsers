@@ -22,7 +22,7 @@ define ("NODE_VAR_NAME", "node");
 define ("PATH_TO_PARSED_FILES", "/files");
 
 
-class RivalParseHub implements IParseHub
+class RivalParseHub
 {
 
     /**
@@ -224,6 +224,8 @@ class RivalParseHub implements IParseHub
         $parsedModel = $this->_currentParser->Parse($this->_dbController);
 
         $this->_lastParseResults = $parsedModel;
+
+        MyLogger::WriteToLog("Final result count is ..." . count($this->_lastParseResults), LOG_ERR);
 
 		//echo "<br/><br/>Cпарсено товаров:" . count($parsedModel) ."<br/><br/>";
 

@@ -40,21 +40,47 @@ require_once 'models/TireModelMinPriceInfo.php';
 require_once 'base/IAggregatorDbController.php';
 require_once 'base/AggregatorParseHub.php';
 require_once 'db/AggregatorMysqlDbController.php';
+require_once 'base/IUniversalRenderer.php';
+require_once 'renderers/CsvUniversalRenderer.php';
 
 
 $hub = new AggregatorParseHub();
-$db = new AggregatorMysqlDbController();
+$db = new MysqlDbController();
 $hub->InjectDBController($db);
 
 //все и вся
 $urlPattern  = "https://market.yandex.ru/vendors.xml?CAT_ID=109743&hid=90490&track=fr_cm_vendor";
 $parser = new YandexMarketParser($urlPattern, $hub);
-$hub->InjectParser($parser)
-	->ProcessParsedDataFromInjectedParserToDB(true);
+$hub->InjectParser($parser);
 
-die; //todo доделать после того как будет заполнена бд
+if(count($_GET) == 0) {
+
+	$hub->ProcessParsedDataFromInjectedParserToDB(true);
+
+} else if ($_GET['postProcess'] != null) {
+
+	$hub->PostProcess();
+
+}
 
 $comparedResult = $hub->GetComparingResult();
 
-$renderer = new CsvRenderer(str_replace('.','',YandexMarketParser::SITE_URL));
+$renderer = new CsvUniversalRenderer(YandexMarketParser::SITE_URL);
+
+//$renderer->SetColumnNames(['CAE','Название магазина', 'URL Yandex.Market', 'Минимальная цена']);
+$renderer->SetColumnNames(['CAE', 'Название магазина', 'Минимальная цена']);
+
+foreach ($comparedResult as $tireMinPriceInfo) {
+
+	$row = [
+		$tireMinPriceInfo->cae,
+		$tireMinPriceInfo->rivalStoreName,
+		//"=hyperlink('".$tireMinPriceInfo->yandexMarketUrl."','View')",
+		$tireMinPriceInfo->minimalPrice
+	];
+	$renderer->FeedValues($row);
+
+}
+
+
 $renderer->Render($comparedResult);

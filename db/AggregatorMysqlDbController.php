@@ -6,6 +6,10 @@
  * Date: 29.02.16
  * Time: 12:47
  */
+
+/**
+ * Class AggregatorMysqlDbController @deprecated
+ */
 class AggregatorMysqlDbController extends MysqlDbController implements IAggregatorDbController
 {
 	const KEY_PREPARED_STATEMENT_INSERT_AGGREGATOR_PARSED_RESULT = "aggregatorInsRes";
@@ -53,10 +57,12 @@ class AggregatorMysqlDbController extends MysqlDbController implements IAggregat
 	/**
 	 * Возвращает все данные о минимальных цена и конкурентах
 	 * собранные по аггрегатору (ЯндексМаркет)
-	 * @return mixed
+	 * @return TireModelMinPriceInfo[]|array|mixed
 	 */
 	public function GetAllMinimalPriceInfoProductModels()
 	{
-		// TODO: Implement GetAllMinimalPriceInfoProductModels() method.
+		$query = "SELECT * FROM TireModelMinPriceInfo as TMPI";
+		$result = $this->_db->query($query)->fetchAll(PDO::FETCH_CLASS, 'TireModelMinPriceInfo');
+		return $result;
 	}
 }
