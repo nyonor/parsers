@@ -10,6 +10,8 @@
  * Time: 20:00
  */
 
+use Sunra\PhpSimple\HtmlDomParser;
+
 abstract class RivalParserBase {
     /**
      * @var string
@@ -29,6 +31,8 @@ abstract class RivalParserBase {
     protected $_allModels;
 
     protected $_curlResponseCookies;
+    
+    protected $_curl;
 
     /**
      * @param $urlPattern string
@@ -82,5 +86,51 @@ abstract class RivalParserBase {
         }
 
         return $this->_curlResponseCookies;
+    }
+
+    public function Request($url, $minWaitSeconds = 0, $maxWaitSeconds = 0) {
+
+        $rawRes = null;
+
+        //do {
+
+        $curl = $this->GetCurl($url);
+
+        MyLogger::WriteToLog("Вызываю URL " . $url, LOG_ERR);
+
+        $rawRes = curl_exec($curl);
+
+        $parser = new HtmlDomParser();
+        $dom = $parser->str_get_html($rawRes);
+
+        $accessDenied = false;
+
+        //доступ был заблокирован
+        /*if (strpos($dom->innertext, "вынуждены временно заблокировать")) {
+
+            //освободим ресурсы парсера
+            $dom->clear();
+            unset($parser);
+
+            //логируем блокировку
+            MyLogger::WriteToLog("Запрос заблокирован и выдана капча... ждем...", LOG_ERR);
+
+            //ждем 1 час и 10 минут
+            sleep(60 * 70);
+            $accessDenied = true;
+
+        }*/
+
+        //} while ($accessDenied == true);
+
+        //освободим ресурсы парсера
+        $dom->clear();
+        unset($parser);
+
+        //выждем время
+        if ($minWaitSeconds > 0 && $maxWaitSeconds > 0)
+            sleep(rand($minWaitSeconds, $maxWaitSeconds));
+
+        return $rawRes;
     }
 }

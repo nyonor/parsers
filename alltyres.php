@@ -13,6 +13,7 @@ error_reporting(E_ALL);
 
 //todo СДЕЛАТЬ АВТОЛОАДЕР!!!!!!
 //require_once "include.php";
+require_once 'sys/MyLogger.php';
 require_once "base/IParseHub.php";
 require_once "base/RivalParserBase.php";
 require_once 'base/RivalParseHub.php';
@@ -32,7 +33,7 @@ require_once 'base/IRenderer.php';
 require_once 'renderers/CsvRenderer.php';
 require_once 'sys/Timer.php';
 require __DIR__ . '/vendor/autoload.php';
-require_once 'sys/MyLogger.php';
+
 
 $hub = new RivalParseHub();
 $db = new MysqlDbController();
