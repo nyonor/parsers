@@ -14,4 +14,10 @@ interface IProductsUpdater
 	 * @return mixed
 	 */
 	function UpdateProducts();
+
+	/**
+	 * Обновление наличия товара
+	 * @return mixed
+	 */
+	function UpdateProductsAvailability();
 }

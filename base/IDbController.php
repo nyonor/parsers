@@ -110,4 +110,49 @@ interface IDbController
 	 * @return TireModelMinPriceInfo[]|array|mixed
 	 */
 	public function GetAllMinimalPriceInfoProductModels();
+
+	/**
+	 * Обновляет доступность нашего товара (есть ли он на складе)
+	 * @param $cae
+	 * @param bool|true $isAvailable
+	 * @return mixed
+	 */
+	public function UpdateProductAvailability($cae, $isAvailable = true);
+
+	/**
+	 * Получает скопом весь список шин, которые нужно проверить в Яндекс-Маркете на минимальные цены
+	 * Возвращает ассциативный массив связанных таблиц Products, YMOffers, YMModels
+	 * С !!!последующей!!! группировкой по колонке Products.model (
+	 * @return mixed
+	 */
+	public function GetTiresForYandexMarketMinimalPriceSearch();
+
+	/**
+	 * Добавляет модель яндекс маркета
+	 * @param $ymModel YMModel
+	 * @return mixed
+	 */
+	public function AddYMModel($ymModel);
+
+	/**
+	 * Добавляет предложение яндекс маркета вместе с магазином
+	 * @param YMOffer $ymOffer
+	 * @return mixed
+	 */
+	public function AddYMOffer($ymOffer);
+
+	/**
+	 * Добавляет магазин указанный в yandex-market
+	 * @param $ymShop
+	 * @return mixed
+	 */
+	public function AddYMShop($ymShop);
+
+	/**
+	 * Возвращает данные (по минимальным ценам из яндекс-маркет результатов АПИ парсинга)
+	 * для рендеринга
+	 * @return mixed
+	 */
+	public function GetYMTiresMinPriceDataForRender();
+
 }

@@ -12,10 +12,19 @@ class ProductsUpdater implements IProductsUpdater
 {
 	const TOCHKI_PRODUCTS_TIRES_URL = "http://www.4tochki.ru/mods/system/export/report_all_tyres.php";
 	const LOCAL_PRODUCTS_FILE_REL_PATH = "/files/report_all_tyres.php";
+	const LOCAL_AVAILABILITY_FILE_REL_PATH = "/files/restnew.php";
+	const AVAILABILITY_FILE_PATH = "http://www.4tochki.ru/mods/system/export/restnew.php";
 
 	protected $_rawContent;
 	protected $_xmlContent;
 	protected $_dbController;
+
+	/*public function __call() {
+
+		if ($this->_dbController == null)
+			throw new Exception("No IDbController provided!");
+
+	}*/
 
 	public function __construct(IDbController $dbController) {
 		$this->_dbController = $dbController;
@@ -26,12 +35,10 @@ class ProductsUpdater implements IProductsUpdater
 	 * @throws Exception
 	 */
 	public function UpdateProducts() {
-		if ($this->_dbController == null)
-			throw new Exception("No IDbController provided!");
 
 		$this->_dbController->TruncateOldProductsData();
 
-		$this->LoadSimpleXmlContent();
+		$this->LoadSimpleXmlContent(self::TOCHKI_PRODUCTS_TIRES_URL);
 		$results = [];
 
 		/**
@@ -63,25 +70,58 @@ class ProductsUpdater implements IProductsUpdater
 	/**
 	 * Загружает объект SimpleXMLElement в свойство
 	 * экземпляра данного класса
+	 * @param $filePathToLoad
 	 */
-	protected function LoadSimpleXmlContent() {
-		$this->_xmlContent = simplexml_load_file($this->GetProductsFilePath());
-		//$this->_xmlContent = simplexml_load_string($this->GetProductsFilePath());
+	protected function LoadSimpleXmlContent($filePathToLoad) {
+		if ($filePathToLoad == self::TOCHKI_PRODUCTS_TIRES_URL)
+		{
+			$this->_xmlContent = simplexml_load_file($this->GetProductsFilePath());
+		}
+
+		if ($filePathToLoad == self::AVAILABILITY_FILE_PATH)
+		{
+			$this->_xmlContent = simplexml_load_file($this->GetAvailabilityFilePath());
+		}
+
 	}
 
-
 	protected function GetProductsFilePath() {
-		//TODO: используй url на сервере!
-		$this->DownloadFile();
+		$this->DownloadFile(self::LOCAL_PRODUCTS_FILE_REL_PATH, self::TOCHKI_PRODUCTS_TIRES_URL);
 		return getcwd() . self::LOCAL_PRODUCTS_FILE_REL_PATH;
 	}
 
-	protected function DownloadFile() {
-		$f = fopen(getcwd().self::LOCAL_PRODUCTS_FILE_REL_PATH,'w');
-		$curl = curl_init(self::TOCHKI_PRODUCTS_TIRES_URL);
+	protected function GetAvailabilityFilePath() {
+		$this->DownloadFile(self::LOCAL_AVAILABILITY_FILE_REL_PATH, self::AVAILABILITY_FILE_PATH);
+		return getcwd() . self::LOCAL_AVAILABILITY_FILE_REL_PATH;
+	}
+
+	protected function DownloadFile($localRelPath, $remoteFilePath) {
+		$f = fopen(getcwd().$localRelPath,'w');
+		$curl = curl_init($remoteFilePath);
 		curl_setopt($curl,CURLOPT_CONNECTTIMEOUT,0);
 		curl_setopt($curl,CURLOPT_FILE,$f);
 		$result = curl_exec($curl);
 		curl_close($curl);
+	}
+
+	/**
+	 * Обновление наличия товара
+	 * @return mixed
+	 */
+	function UpdateProductsAvailability()
+	{
+		//загрузим данные о наличии из удаленного файла на 4точках
+		$this->LoadSimpleXmlContent(self::AVAILABILITY_FILE_PATH);
+
+		//пробегаем данные о наличии
+		/**
+		 * @var $availabilityXml SimpleXMLElement
+		 */
+		foreach($this->_xmlContent as $availabilityXml) {
+
+			//обновляем данные о наличии
+			$this->_dbController->UpdateProductAvailability($availabilityXml->cae, true);
+
+		}
 	}
 }

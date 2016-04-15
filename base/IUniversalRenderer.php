@@ -23,4 +23,8 @@ interface IUniversalRenderer extends IRenderer
 	 */
 	function FeedValues($rowValues);
 
+	function Clear();
+
+	function SetFileName($fileName);
+
 }

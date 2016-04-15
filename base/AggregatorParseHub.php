@@ -117,4 +117,12 @@ class AggregatorParseHub extends RivalParseHub implements IInstantStore
 		$this->_dbController->AddAggregatorParsingResult($object);
 	}
 
+	function UpdateProducts() {
+
+		parent::UpdateProducts();
+
+		$this->_productsUpdater->UpdateProductsAvailability();
+
+	}
+
 }

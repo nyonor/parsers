@@ -1,0 +1,66 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: NyoNor
+ * Date: 11.04.16
+ * Time: 11:14
+ */
+
+namespace models;
+
+use YMModel;
+
+class YMModelDetailed extends YMModel
+{
+	const REQ_KEY_MODEL_NAME = "name";
+	const REQ_KEY_CURRENCY = "currency";
+	const REQ_KEY_GEO_ID = "geo_id";
+
+	const RET_KEY_FIELDS_CATEGORY = "category";
+	const RET_KEY_FIELDS_DISCOUNTS = "discounts";
+	const RET_KEY_FIELDS_FACTS = "facts";
+	const RET_KEY_FIELDS_MEDIA = "media";
+	const RET_KEY_FIELDS_PHOTO = "photo";
+	const RET_KEY_FIELDS_PRICE = "price";
+	const RET_KEY_FIELDS_RAITING = "raiting";
+	const RET_KEY_FIELDS_OFFERS = "offers";
+	const RET_KEY_FIELDS_VENDOR = "vendor";
+
+	/* значения для запроса
+	см https://tech.yandex.ru/market/content-data/doc/dg/reference/model-match-docpage/ параметр fields */
+	public $returnFields;
+	public $geoId;
+
+	/*
+	 *  возвращенные значение
+	 *  некоторые значения будут содержать stdclass
+	 *  см. что возвращает яндекс-маркет-апи
+	*/
+
+	public $name;
+	public $offerCount;
+	public $type;
+	public $category;
+	public $price;
+	public $photo;
+	public $vendor;
+	public $media;
+	public $facts;
+
+	/*public function GetAllReturnFields() {
+
+		return [
+
+			self::RET_KEY_FIELDS_CATEGORY,
+			self::RET_KEY_FIELDS_DISCOUNTS,
+			self::RET_KEY_FIELDS_FACTS,
+			self::RET_KEY_FIELDS_MEDIA,
+			self::RET_KEY_FIELDS_PHOTO,
+			self::RET_KEY_FIELDS_OFFERS,
+			self::RET_KEY_FIELDS_VENDOR,
+			self::RET_KEY_FIELDS_RAITING
+
+		];
+
+	}*/
+}

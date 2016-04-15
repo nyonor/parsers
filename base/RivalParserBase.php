@@ -100,8 +100,8 @@ abstract class RivalParserBase {
 
         $rawRes = curl_exec($curl);
 
-        $parser = new HtmlDomParser();
-        $dom = $parser->str_get_html($rawRes);
+        //$parser = new HtmlDomParser();
+        //$dom = $parser->str_get_html($rawRes);
 
         $accessDenied = false;
 
@@ -124,8 +124,10 @@ abstract class RivalParserBase {
         //} while ($accessDenied == true);
 
         //освободим ресурсы парсера
-        $dom->clear();
-        unset($parser);
+        /*if (isset($dom) && method_exists($dom, "clear")) {
+            $dom->clear();
+            unset($parser);
+        }*/
 
         //выждем время
         if ($minWaitSeconds > 0 && $maxWaitSeconds > 0)

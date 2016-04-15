@@ -10,4 +10,5 @@ class ProductTireModel extends TireModel
 {
 	public $cae;
 	public $price;
+	public $available;
 }

@@ -19,6 +19,13 @@ class MysqlDbController implements IDbController
 	const KEY_PREPARED_STATEMENT_INSERT_LINK_PRODUCTS_TO_PARSED_RESULT = "prepStForLink";
 	const KEY_PREPARED_STATEMENT_SELECT_COMPARED_BY_PARSED = "prepStSelComparedByParsed";
 	const KEY_PREPARED_STATEMENT_INSERT_AGGREGATOR_PARSED_RESULT = "aggregatorInsRes";
+	const KEY_PREPARED_STATEMENT_UPDATE_OUR_PRODUCT_AVAILABILITY = "updateOurProdAvailability";
+	const KEY_PREPARED_STATEMENT_SELECT_FOR_YM_MINIMAL_PRICES = "selectForYmMinimalPrices";
+	const KEY_PREPARED_STATEMENT_ADD_YMMODEL = "addYmModel";
+	const KEY_PREPARED_STATEMENT_ADD_YM_LINKS_MODEL = "addYmLinksModel";
+	const KEY_PREPARED_STATEMENT_ADD_YM_LINKS_OFFER = "addYmLinksOffer";
+	const KEY_PREPARED_STATEMENT_ADD_YMOFFER = "addYmoffer";
+	const KEY_PREPARED_STATEMENT_ADD_YMOSHOP = "addYmShop";
 
 	protected $_db;
 	protected $_lastPreparedStatementsArray = [];
@@ -487,5 +494,283 @@ class MysqlDbController implements IDbController
 					LEFT JOIN Products as P on P.cae = TMPI.productCae";
 		$result = $this->_db->query($query)->fetchAll(PDO::FETCH_CLASS, 'TireModelMinPriceInfo');
 		return $result;
+	}
+
+	/**
+	 * Обновляет доступность нашего товара (есть ли он на складе)
+	 * @param $cae
+	 * @param bool|true $isAvailable
+	 * @return mixed
+	 */
+	public function UpdateProductAvailability($cae, $isAvailable = true)
+	{
+		$sql = "UPDATE Products SET Products.available = :isAvailable WHERE Products.cae = :cae";
+
+		$statement = null;
+		//если подготовленного выражения нет, то добавим его по ключу
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_UPDATE_OUR_PRODUCT_AVAILABILITY) == null) {
+			$statement = $this->_db->prepare($sql);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_UPDATE_OUR_PRODUCT_AVAILABILITY, $statement);
+		}
+
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_UPDATE_OUR_PRODUCT_AVAILABILITY);
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		$statement->bindValue(":isAvailable", $isAvailable);
+		$statement->bindValue(":cae", $cae);
+
+		$statement->execute();
+	}
+
+	/**
+	 * @return mixed
+	 * @throws Exception
+	 */
+	public function GetTiresForYandexMarketMinimalPriceSearch()
+	{
+		$sql = "SELECT  PTab.brand, PTab.model, PTab.width, PTab.height,
+				PTab.diameter, PTab.loadIndex, PTab.speedIndex, PTab.season, PTab.runFlat,
+				YMMTab.*, YMOTab.*, PTab.cae
+				FROM Products as PTab
+				LEFT JOIN ProductsToYandexMarketKeys AS PTYMTab ON PTYMTab.cae = PTab.cae
+				LEFT JOIN YMOffers AS YMOTab on YMOTab.cae = PTab.cae
+				LEFT JOIN YMModels AS YMMTab on YMMTab.ymModelId = PTYMTab.ymModelId
+				WHERE PTab.available IS TRUE AND PTYMTab.updateDate <= NOW() - INTERVAL 1 WEEK
+				|| PTYMTab.updateDate IS NULL
+				ORDER BY YMMTab.ymModelUpdateDate ASC, model, brand
+				";
+
+		$statement = null;
+		//если подготовленного выражения нет, то добавим его по ключу
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_FOR_YM_MINIMAL_PRICES) == null) {
+			$statement = $this->_db->prepare($sql);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_FOR_YM_MINIMAL_PRICES, $statement);
+		}
+
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_SELECT_FOR_YM_MINIMAL_PRICES);
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		if($statement->execute()){
+			$res = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+			return $res;
+		}
+
+		throw new Exception("Something going wrong in DB!");
+	}
+
+	protected function AddYMModelLink($cae, $ymModelId) {
+
+		$sql = "INSERT INTO 4tochki.ProductsToYandexMarketKeys (cae, ymModelId)
+			  	VALUES (:cae, :ymModelId)
+				ON DUPLICATE KEY UPDATE
+				ymModelId = :ymModelId,
+				updateDate = NOW()";
+
+		$statement = null;
+		//если подготовленного выражения нет, то добавим его по ключу
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YM_LINKS_MODEL) == null) {
+			$statement = $this->_db->prepare($sql);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YM_LINKS_MODEL, $statement);
+		}
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YM_LINKS_MODEL);
+
+		$statement->bindValue(":cae", $cae);
+
+		//if ($ymModelId != null)
+		$statement->bindValue(":ymModelId", $ymModelId);
+
+		//if ($ymOfferId != null)
+		//$statement->bindValue(":ymOfferId", $ymOfferId);
+
+		$statement->execute();
+
+	}
+
+	protected function AddYMOfferLink($cae, $ymOfferId) {
+
+		$sql = "INSERT INTO 4tochki.ProductsToYandexMarketKeys (cae, ymOfferId)
+			  	VALUES (:cae, :ymOfferId)
+				ON DUPLICATE KEY UPDATE
+				ymOfferId = :ymOfferId,
+				updateDate = NOW()";
+
+		$statement = null;
+		//если подготовленного выражения нет, то добавим его по ключу
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YM_LINKS_OFFER) == null) {
+			$statement = $this->_db->prepare($sql);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YM_LINKS_OFFER, $statement);
+		}
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YM_LINKS_OFFER);
+
+		$statement->bindValue(":cae", $cae);
+
+		//if ($ymModelId != null)
+		//$statement->bindValue(":ymModelId", $ymModelId);
+
+		//if ($ymOfferId != null)
+		$statement->bindValue(":ymOfferId", $ymOfferId);
+
+		$statement->execute();
+
+	}
+
+
+	/**
+	 * Сохраняет результат парсинга модели в яндекс-маркете
+	 * @param $ymModel YMModel
+	 * @return mixed
+	 */
+	public function AddYMModel($ymModel)
+	{
+		//var_dump($ymModel);die;
+
+		$this->AddYMModelLink($ymModel->cae, $ymModel->ymModelId);
+
+		if ($ymModel->ymModelId == null)
+			return;
+
+		$sql = "INSERT INTO 4tochki.YMModels
+			  	(ymModelId, ymModelJsonRaw, ymModelName)
+			  	VALUES (:ymModelId, :ymModelJsonRaw, :ymModelName)
+				ON DUPLICATE KEY UPDATE
+				ymModelId = :ymModelId,
+				ymModelUpdateDate = NOW(),
+				ymModelJsonRaw = :ymModelJsonRaw,
+				ymModelName = :ymModelName";
+
+		$statement = null;
+		//если подготовленного выражения нет, то добавим его по ключу
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMMODEL) == null) {
+			$statement = $this->_db->prepare($sql);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMMODEL, $statement);
+		}
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMMODEL);
+
+		$statement->bindValue(":cae", $ymModel->cae);
+		$statement->bindValue(":ymModelId", $ymModel->ymModelId);
+		$statement->bindValue(":ymModelJsonRaw", $ymModel->ymModelJsonRaw);
+		$statement->bindValue(":ymModelName", $ymModel->ymModelName);
+
+		$statement->execute();
+	}
+
+	/**
+	 * Добавляет предложение яндекс маркета вместе с магазином
+	 * @param YMOffer $ymOffer
+	 * @return mixed
+	 */
+	public function AddYMOffer($ymOffer)
+	{
+		$this->AddYMOfferLink($ymOffer->cae, $ymOffer->ymOfferId);
+
+		if ($ymOffer->ymOfferId == null)
+			return;
+
+		$sql = "INSERT INTO YMOffers (ymOfferId, cae, shopId, price, minimalPrice, ymOfferJsonRaw,
+				ymModelId, ymRegionId, ymModelIdReturned)
+				VALUES (:ymOfferId, :cae, :shopId, :price, :minimalPrice, :ymOfferJsonRaw,:ymModelId, :ymRegionId,
+				:ymModelIdReturned)
+				ON DUPLICATE KEY UPDATE
+				ymOfferId = :ymOfferId,
+				cae = :cae,
+				shopId = :shopId,
+				price = :price,
+				minimalPrice = :minimalPrice,
+				ymOfferJsonRaw = :ymOfferJsonRaw,
+				ymModelId = :ymModelId,
+				ymRegionId = :ymRegionId,
+				ymModelIdReturned = :ymModelIdReturned
+				";
+
+		$statement = null;
+		//если подготовленного выражения нет, то добавим его по ключу
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMOFFER) == null) {
+			$statement = $this->_db->prepare($sql);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMOFFER, $statement);
+		}
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMOFFER);
+		$statement->bindValue(":ymOfferId", $ymOffer->ymOfferId);
+		$statement->bindValue(":cae", $ymOffer->cae);
+		$statement->bindValue(":shopId", $ymOffer->shopId);
+		$statement->bindValue(":price", $ymOffer->price);
+		$statement->bindValue(":minimalPrice", $ymOffer->minimalPrice);
+		$statement->bindValue(":ymOfferJsonRaw", $ymOffer->ymOfferJsonRaw);
+		$statement->bindValue(":ymModelId", $ymOffer->ymModelId);
+		$statement->bindValue(":ymRegionId", $ymOffer->ymRegionId);
+		$statement->bindValue(":ymModelIdReturned", $ymOffer->ymModelIdReturned);
+
+		$statement->execute();
+	}
+
+	/**
+	 * Добавляет магазин указанный в yandex-market
+	 * @param $ymShop YMShop
+	 * @return mixed
+	 */
+	public function AddYMShop($ymShop)
+	{
+		var_dump($ymShop);
+		$sql = "INSERT INTO YMShops (`ymShopId`, `name`, `siteUrl`, `jsonRaw`)
+				VALUES (:ymShopId, :name, :siteUrl, :jsonRaw)
+				ON DUPLICATE KEY UPDATE
+				name = :name,
+				siteUrl = :siteUrl,
+				jsonRaw = :jsonRaw";
+
+		$statement = null;
+		//если подготовленного выражения нет, то добавим его по ключу
+		if ($this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMOSHOP) == null) {
+			$statement = $this->_db->prepare($sql);
+			$this->SetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMOSHOP, $statement);
+		}
+
+		/**
+		 * @var $statement PDOStatement
+		 */
+		$statement = $this->GetPreparedStatementByKey(self::KEY_PREPARED_STATEMENT_ADD_YMOSHOP);
+
+
+		$statement->bindValue(":ymShopId", $ymShop->id);
+		$statement->bindValue(":name", $ymShop->name);
+		$statement->bindValue(":siteUrl", $ymShop->siteUrl);
+		$statement->bindValue(":jsonRaw", $ymShop->jsonRaw);
+
+		$statement->execute();
+	}
+
+	/**
+	 * Возвращает данные (по минимальным ценам из яндекс-маркет результатов АПИ парсинга)
+	 * для рендеринга
+	 * @return mixed|array
+	 */
+	public function GetYMTiresMinPriceDataForRender()
+	{
+		$sql = "SELECT *, ymo.price FROM YMOffers as ymo
+				left join Products as p on p.cae = ymo.cae
+				left join YMShops as yms on yms.ymShopId = ymo.shopId
+				";
+
+		return $this->_db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 	}
 }

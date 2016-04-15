@@ -64,4 +64,16 @@ class CsvUniversalRenderer implements IUniversalRenderer
 	{
 		$this->_values[] = $rowValues;
 	}
+
+	function Clear()
+	{
+		unset($this->_columnNames);
+		unset($this->_values);
+		unset($this->_filename);
+	}
+
+	function SetFileName($fileName)
+	{
+		$this->_filename = $fileName;
+	}
 }

@@ -172,4 +172,44 @@ class MongoDbController implements IDbController
 	{
 		// TODO: Implement GetAllMinimalPriceInfoProductModels() method.
 	}
+
+	/**
+	 * Обновляет доступность нашего товара (есть ли он на складе)
+	 * @param $cae
+	 * @param bool|true $isAvailable
+	 * @return mixed
+	 */
+	public function UpdateProductAvailability($cae, $isAvailable = true)
+	{
+		// TODO: Implement UpdateProductAvailability() method.
+	}
+
+	/**
+	 *
+	 * @return mixed
+	 */
+	public function GetTiresForYandexMarketMinimalPriceSearch()
+	{
+		// TODO: Implement GetTiresForYandexMarketMinimalPriceSearch() method.
+	}
+
+	/**
+	 * Добавляет модель яндекс маркета
+	 * @param $ymModel YMModel
+	 * @return mixed
+	 */
+	public function AddYMModel($ymModel)
+	{
+		// TODO: Implement AddYMModel() method.
+	}
+
+	/**
+	 * Добавляет предложение яндекс маркета вместе с магазином
+	 * @param YMOffer $ymOffer
+	 * @return mixed
+	 */
+	public function AddYMOffer($ymOffer)
+	{
+		// TODO: Implement AddYMOfferWithYMShop() method.
+	}
 }

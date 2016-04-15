@@ -25,7 +25,7 @@ class SShinaParser extends RivalParserBase implements IProductParametersParser
 		$ourBrands = $dbController->GetAllBrands();
 
 		$page = 1;
-		$maxPage = 2;
+		$maxPage = 0;
 
 		$results = [];
 
@@ -34,9 +34,29 @@ class SShinaParser extends RivalParserBase implements IProductParametersParser
 			$shouldContinue = false;
 
 			$url = sprintf($this->_urlPattern, $page);
-			$requestResRawString = iconv('cp1251', 'utf8',$this->Request($url, 2, 5));
+			$requestResRawString = iconv('cp1251', 'utf8',$this->Request($url, 0, 0));
+
+			//print_r($requestResRawString);die;
+
+			$res = [];
+			preg_match('/(Шин с выбранными параметрами не найдено)/is', $requestResRawString, $res);
+			if (isset($res[1])) {
+
+				//echo "STOP";
+				break;
+				$shouldContinue = false;
+
+			} else {
+				//echo "CONT!";
+				$shouldContinue = true;
+			}
+
 			$parser = new HtmlDomParser();
 			$dom = $parser->str_get_html($requestResRawString);
+
+			if(method_exists($dom, "find") == false) {
+				continue;
+			}
 
 			foreach($dom->find(".srl-item") as $div) {
 
@@ -117,8 +137,12 @@ class SShinaParser extends RivalParserBase implements IProductParametersParser
 				$shouldContinue = true;
 			}
 
-			$dom->clear();
-			unset($dom);
+			if (method_exists($dom, "clear")) {
+
+				$dom->clear();
+				unset($dom);
+
+			}
 
 			$page++;
 

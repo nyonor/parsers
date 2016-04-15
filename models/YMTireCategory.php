@@ -1,0 +1,33 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: NyoNor
+ * Date: 13.04.16
+ * Time: 12:59
+ */
+
+namespace models;
+
+
+class YMTireCategory extends YMCategory
+{
+	const FILTER_MAX_PRICE_ID = "2140131887";
+	const FILTER_MIN_PRICE_ID = "2140131888";
+	const FILTER_SEASON_ID = "2142418426";
+	const FILTER_DIAMETER_ID = "2142418420";
+	const FILTER_WIDTH_ID = "2142418424";
+	const FILTER_HEIGHT_ID = "2142418422";
+	//const FILTER_CONSTRUCTION_ID = "2142418418";
+	const FILTER_RUNFLAT_ID = "2142418417";
+	const FILTER_SPEEDINDEX_ID = "2142418412";
+	const FILTER_LOADINDEX_ID = "2142418414";
+	const FILTER_OFFER_MINPRICE = "2140131888";
+
+	const FILTER_SEASON_VALUE_WINTER = "зимние";
+	const FILTER_SEASON_VALUE_SUMMER = "летние";
+	const FILTER_SEASON_VALUE_ALLSEASONS = "всесезонные";
+
+	const FIELDS_DISCOUNTS = "DISCOUNTS";
+	const FIELDS_FILTERS = "FILTERS";
+	const FIELDS_METADATA = "METADATA";
+}

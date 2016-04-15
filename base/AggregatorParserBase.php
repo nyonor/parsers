@@ -18,13 +18,6 @@ abstract class AggregatorParserBase extends RivalParserBase
 	}
 
 	/**
-	 * Делает запрос по url и возвращает результат в виде строки
-	 * @param $url string
-	 * @return string
-	 */
-	public abstract function Request($url);
-
-	/**
 	 * Постпроцессинг данных собранных парсером-аггрегатора
 	 * @return mixed
 	 */
