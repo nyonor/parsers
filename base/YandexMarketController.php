@@ -40,13 +40,25 @@ class YandexMarketController implements IRenderer, IProductsUpdater
 		set_time_limit(0);
 	}
 
-	public function GetMinimalPricesOnTires($regionName) {
+	public function GetMinimalPricesOnTires($regionName, array $caeToSearch = null) {
 
 		//регион, по которому будем искать минимальные цены
 		$this->_regionId = $this->GetYMRegionIdByName($regionName);
 		$this->_regionName = $regionName;
 
-		$tiresToSearch = $this->_db->GetTiresForYandexMarketMinimalPriceSearch();
+		if (empty($caeToSearch))
+			$tiresToSearch = $this->_db->GetTiresForYandexMarketMinimalPriceSearch();
+		else {
+
+			$tiresToSearch = (array)$this->_db->GetProductsByCae($caeToSearch, "ProductTireModel");
+			foreach($tiresToSearch as $k=>$v) {
+
+				$tiresToSearch[$k] = (array)$v;
+
+			}
+		}
+
+		//var_dump($tiresToSearch);die;
 
 		$lastModelName = null;
 
@@ -71,7 +83,7 @@ class YandexMarketController implements IRenderer, IProductsUpdater
 			//новая модель в списке
 			if ($lastModelName != $modelName){
 
-				var_dump("NEW MODEL..." . $modelName);
+				var_dump("NEW MODEL...");
 
 				/*$ymModelDetailed = new YMModelDetailed();
 				$ymModelDetailed->geoId = $this->_regionId;
@@ -80,7 +92,16 @@ class YandexMarketController implements IRenderer, IProductsUpdater
 				$ymModelDetailed->cae = $tireToSearch['cae'];
 				$ymModelDetailed->returnFields = "all";*/
 
+				//небольшая хитрость - todo пока хитрость отменяется =)
+				//ищем сначала по длинному имени
 				$ymModelDetailed = $this->GetYMModelThroughApiService($modelNameConcrete, $this->_regionId);
+
+				//если не нашли то по короткому из номенклатурного названия модели + бренд
+				//if ($ymModelDetailed->ymModelJsonRaw == null)
+				//{
+				//	$ymModelDetailed = $this->GetYMModelThroughApiService($modelName , $this->_regionId);
+				//}
+
 				$ymModelDetailed->categoryId =
 					$ymModelDetailed->categoryId == null
 						? YandexMarketApiService::YM_CATEGORY_TIRES_ID
@@ -106,7 +127,6 @@ class YandexMarketController implements IRenderer, IProductsUpdater
 			//если такой модели не найдено
 			if ($ymModelDetailed->ymModelJsonRaw == null){
 
-				//todo добавить пустой результат - такой модели нет
 				continue;
 
 			}
@@ -114,12 +134,9 @@ class YandexMarketController implements IRenderer, IProductsUpdater
 			//если на модель нет товарных предложений
 			if($ymModelDetailed->offerCount == null || $ymModelDetailed->offerCount < 1) {
 
-				//todo добавить результат с YMModel - модель есть, но на нее нет предложений
 				continue;
 
 			}
-
-			//die;
 
 			//найдем предложение по минимальной цене
 			$returnFields = YMOfferDetailed::RET_KEY_FIELDS_DICOUNTS . "," . YMOfferDetailed::RET_KEY_FIELDS_FILTERS;

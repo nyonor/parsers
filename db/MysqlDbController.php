@@ -537,9 +537,9 @@ class MysqlDbController implements IDbController
 				LEFT JOIN ProductsToYandexMarketKeys AS PTYMTab ON PTYMTab.cae = PTab.cae
 				LEFT JOIN YMOffers AS YMOTab on YMOTab.cae = PTab.cae
 				LEFT JOIN YMModels AS YMMTab on YMMTab.ymModelId = PTYMTab.ymModelId
-				WHERE PTab.available = 1 AND (PTYMTab.updateDate <= NOW() - INTERVAL 1 WEEK
-				|| PTYMTab.updateDate IS NULL)
-				ORDER BY YMMTab.ymModelUpdateDate ASC, model, brand
+				WHERE PTab.available = 1 #AND (PTYMTab.updateDate <= NOW() - INTERVAL 1 WEEK
+				#|| PTYMTab.updateDate IS NULL)
+				ORDER BY PTYMTab.updateDate ASC, model, brand
 				";
 
 		$statement = null;
@@ -788,5 +788,16 @@ class MysqlDbController implements IDbController
                 group by ymModelId";
 
 		return $this->_db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+	}
+
+	/**
+	 * @param string $caeArray
+	 * @param string $classNameToMap
+	 * @return mixed
+	 */
+	function GetProductsByCae($caeArray, $classNameToMap = "ProductTireModel")
+	{
+		$sql = "SELECT * FROM Products as P WHERE P.cae IN (" . implode(',', $caeArray) . ")";
+		return $this->_db->query($sql)->fetchAll(PDO::FETCH_CLASS, $classNameToMap);
 	}
 }

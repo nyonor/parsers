@@ -48,7 +48,7 @@ class YandexMarketApiService implements IYandexMarketApiService
 			"&fields=".$fieldsString.
 			"&geo_id=".$regionId;
 
-		var_dump("Requesting YMModel... " . $requestString);
+		var_dump("Requesting YMModel by name... " . $name . " with URL: " . $requestString);
 
 		$formatRawResult = $this->Request($requestString);
 

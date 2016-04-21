@@ -232,4 +232,23 @@ class MongoDbController implements IDbController
 	{
 		// TODO: Implement GetYMTiresMinPriceDataForRender() method.
 	}
+
+	/**
+	 * Возвращает модели по всем товарам
+	 * @return mixed
+	 */
+	public function GetYMTiresModelsByAvailableProducts()
+	{
+		// TODO: Implement GetYMTiresModelsByAvailableProducts() method.
+	}
+
+	/**
+	 * @param string $caeArray
+	 * @param string $classNameToMap
+	 * @return mixed
+	 */
+	function GetProductsByCae($caeArray, $classNameToMap)
+	{
+		// TODO: Implement GetProductByCae() method.
+	}
 }

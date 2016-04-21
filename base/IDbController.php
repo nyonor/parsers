@@ -162,4 +162,11 @@ interface IDbController
 	 */
 	public function GetYMTiresModelsByAvailableProducts();
 
+	/**
+	 * @param $caeArray array
+	 * @param string $classNameToMap
+	 * @return mixed
+	 */
+	function GetProductsByCae($caeArray, $classNameToMap);
+
 }
