@@ -28,6 +28,9 @@ class YMModelDetailed extends YMModel
 
 	/* значения для запроса
 	см https://tech.yandex.ru/market/content-data/doc/dg/reference/model-match-docpage/ параметр fields */
+	/**
+	 * @deprecated $returnFields
+	 */
 	public $returnFields;
 	public $geoId;
 
@@ -37,12 +40,28 @@ class YMModelDetailed extends YMModel
 	 *  см. что возвращает яндекс-маркет-апи
 	*/
 
+	public $minModelPrice;
+	public $vendorId;
+	public $vendorName;
+
 	public $name;
 	public $offerCount;
 	public $type;
-	public $category;
-	public $price;
+	public $categoryId;
+
+	/**
+	 * @deprecated $photo
+	 */
 	public $photo;
+
+	/**
+	 * @deprecated $price
+	 */
+	public $price;
+
+	/**
+	 * @deprecated $vendor
+	 */
 	public $vendor;
 	public $media;
 	public $facts;

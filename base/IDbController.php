@@ -127,6 +127,7 @@ interface IDbController
 	 */
 	public function GetTiresForYandexMarketMinimalPriceSearch();
 
+
 	/**
 	 * Добавляет модель яндекс маркета
 	 * @param $ymModel YMModel
@@ -154,5 +155,11 @@ interface IDbController
 	 * @return mixed
 	 */
 	public function GetYMTiresMinPriceDataForRender();
+
+	/**
+	 * Возвращает модели по всем товарам
+	 * @return mixed
+	 */
+	public function GetYMTiresModelsByAvailableProducts();
 
 }

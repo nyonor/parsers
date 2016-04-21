@@ -18,6 +18,7 @@ class YMOffer
 	public $ymModelIdReturned;
 	public $ymRegionId;
 	public $cae;
+	public $ymName;
 
 	public $YMShop;
 
@@ -35,10 +36,12 @@ class YMOffer
 			$ymOffer = new YMOffer();
 			$ymOffer->ymOfferJsonRaw = json_encode($offerItem);
 			$ymOffer->minimalPrice = $offerItem->price->value;
-			$ymOffer->shopId = $offerItem->price->shopInfo->id;
+			$ymOffer->shopId = $offerItem->shopInfo->id;
 			$ymOffer->ymOfferId = $offerItem->id;
 			$ymOffer->price = $offerItem->price->value;
-			$ymOffer->ymModelIdReturned = $offerItem->modelId;
+			$ymOffer->ymModelIdReturned = empty($offerItem->modelId) == false ? $offerItem->modelId : null;
+
+			$ymOffer->ymName = $offerItem->name;
 
 			$ymShop = YMShop::Factory(json_encode($offerItem->shopInfo));
 			$ymOffer->YMShop = $ymShop;

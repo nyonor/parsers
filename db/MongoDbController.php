@@ -212,4 +212,24 @@ class MongoDbController implements IDbController
 	{
 		// TODO: Implement AddYMOfferWithYMShop() method.
 	}
+
+	/**
+	 * Добавляет магазин указанный в yandex-market
+	 * @param $ymShop
+	 * @return mixed
+	 */
+	public function AddYMShop($ymShop)
+	{
+		// TODO: Implement AddYMShop() method.
+	}
+
+	/**
+	 * Возвращает данные (по минимальным ценам из яндекс-маркет результатов АПИ парсинга)
+	 * для рендеринга
+	 * @return mixed
+	 */
+	public function GetYMTiresMinPriceDataForRender()
+	{
+		// TODO: Implement GetYMTiresMinPriceDataForRender() method.
+	}
 }

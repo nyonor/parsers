@@ -537,8 +537,8 @@ class MysqlDbController implements IDbController
 				LEFT JOIN ProductsToYandexMarketKeys AS PTYMTab ON PTYMTab.cae = PTab.cae
 				LEFT JOIN YMOffers AS YMOTab on YMOTab.cae = PTab.cae
 				LEFT JOIN YMModels AS YMMTab on YMMTab.ymModelId = PTYMTab.ymModelId
-				WHERE PTab.available IS TRUE AND PTYMTab.updateDate <= NOW() - INTERVAL 1 WEEK
-				|| PTYMTab.updateDate IS NULL
+				WHERE PTab.available = 1 AND (PTYMTab.updateDate <= NOW() - INTERVAL 1 WEEK
+				|| PTYMTab.updateDate IS NULL)
 				ORDER BY YMMTab.ymModelUpdateDate ASC, model, brand
 				";
 
@@ -696,7 +696,8 @@ class MysqlDbController implements IDbController
 				ymOfferJsonRaw = :ymOfferJsonRaw,
 				ymModelId = :ymModelId,
 				ymRegionId = :ymRegionId,
-				ymModelIdReturned = :ymModelIdReturned
+				ymModelIdReturned = :ymModelIdReturned,
+				ymOfferUpdateDate = NOW()
 				";
 
 		$statement = null;
@@ -770,6 +771,21 @@ class MysqlDbController implements IDbController
 				left join Products as p on p.cae = ymo.cae
 				left join YMShops as yms on yms.ymShopId = ymo.shopId
 				";
+
+		return $this->_db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+	}
+
+
+	/**
+	 * Возвращает модели по всем товарам
+	 * @return mixed
+	 */
+	public function GetYMTiresModelsByAvailableProducts()
+	{
+		$sql = "SELECT *, ymo.price FROM YMOffers as ymo
+				left join Products as p on p.cae = ymo.cae
+				left join YMShops as yms on yms.ymShopId = ymo.shopId
+                group by ymModelId";
 
 		return $this->_db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 	}

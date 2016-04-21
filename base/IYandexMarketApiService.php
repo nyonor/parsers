@@ -14,10 +14,12 @@ interface IYandexMarketApiService
 
 	/**
 	 * Поиск модели яндекс-маркета по имени
-	 * @param $model mixed|YMModelDetailed
-	 * @return mixed|YMModel|YMModel[]
+	 * @param $name
+	 * @param $returnFields
+	 * @param $regionId
+	 * @return YMModelDetailed
 	 */
-	function FindYMModelsByName($model);
+     function FindYMModelsByParams($name, $returnFields, $regionId);
 
 	/**
 	 * @param $ymModelId int
@@ -32,4 +34,13 @@ interface IYandexMarketApiService
 	 */
 	function FindYMOffersByModel ($ymModelId, $ymGeoId, $ymReturnFields, $filtersDictionary, $sortBy, $page, $ymCategoryId, $count);
 
+	/**
+	 * Получает данные по фильтрам от yandex-market,
+	 * которые отнсятся к категории
+	 * @param int $categoryId
+	 * @param int $geoId
+	 * @return stdClass
+	 */
+	function FindFiltersByYMCategoryId($categoryId = YandexMarketApiService::YM_CATEGORY_TIRES_ID,
+									   $geoId = YandexMarketApiService::YM_GEO_ID_MOSCOW);
 }

@@ -120,7 +120,17 @@ class ProductsUpdater implements IProductsUpdater
 		foreach($this->_xmlContent as $availabilityXml) {
 
 			//обновляем данные о наличии
-			$this->_dbController->UpdateProductAvailability($availabilityXml->cae, true);
+			for($i = 1; $i < 30; $i++){
+
+				$restTag = "rest".$i;
+				if (empty($availabilityXml->{$restTag}) == false && $availabilityXml->{$restTag} > 0){
+
+					$this->_dbController->UpdateProductAvailability($availabilityXml->cae, true);
+					break;
+
+				}
+
+			}
 
 		}
 	}

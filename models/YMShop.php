@@ -23,7 +23,7 @@ class YMShop
 		$ymShop->id = $decoded->id;
 		$ymShop->jsonRaw = $shopInfoJson;
 		$ymShop->name = $decoded->name;
-		$ymShop->siteUrl = $decoded->url;
+		$ymShop->siteUrl = empty($decoded->url) ? null : $decoded->url;
 
 		return $ymShop;
 	}

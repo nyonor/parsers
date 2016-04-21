@@ -6,7 +6,11 @@
  * Time: 14:22
  */
 
-error_reporting(E_ALL & ~E_NOTICE);
+//error_reporting(E_ALL & ~E_NOTICE);
+
+
+ini_set("display_errors", true);
+error_reporting(E_ALL);
 
 require __DIR__ . '/vendor/autoload.php';
 require_once "sys/myAutoLoader.php";
@@ -53,8 +57,8 @@ $db = new MysqlDbController();
 $controller = new YandexMarketController($db, new YandexMarketApiService(),
 	new CsvUniversalRenderer(YANDEX_MARKET_TIRES_MINIMAL_PRICES), new ProductsUpdater($db));
 
-$controller->UpdateProducts();
-$controller->UpdateProductsAvailability();
+//$controller->UpdateProducts();
+//$controller->UpdateProductsAvailability();
 
 $controller
 	->GetMinimalPricesOnTires("москва")

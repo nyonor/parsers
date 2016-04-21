@@ -36,7 +36,49 @@ class YandexMarketApiService implements IYandexMarketApiService
 
 	}
 
+	function FindYMModelsByParams($name, $returnFields, $regionId)
+	{
+		$url = sprintf(self::FIND_YM_MODELS_BY_NAME_URL_PATTERN, self::FORMAT);
+
+		$requestString = $url . "?name=".urlencode($name);
+
+		$fieldsString = $returnFields;
+
+		$requestString .= "&currency=".self::DEFAULT_CURRENCY.
+			"&fields=".$fieldsString.
+			"&geo_id=".$regionId;
+
+		var_dump("Requesting YMModel... " . $requestString);
+
+		$formatRawResult = $this->Request($requestString);
+
+		$decodedRawResult = json_decode($formatRawResult);
+
+		//var_dump($name ." ". $returnFields . " " . $regionId);
+		print_r($decodedRawResult);//;die;
+
+		$resultYmModelDetailed = new YMModelDetailed();
+
+		if (empty($decodedRawResult->errors) == false)
+			return $resultYmModelDetailed;
+
+		$resultYmModelDetailed->name = $name;
+		$resultYmModelDetailed->minModelPrice = $decodedRawResult->model->price->min;
+		$resultYmModelDetailed->categoryId = $decodedRawResult->model->category->id;
+		$resultYmModelDetailed->vendorId = $decodedRawResult->model->vendor->id;
+		$resultYmModelDetailed->vendorName = $decodedRawResult->model->vendor->name;
+		$resultYmModelDetailed->ymModelId = $decodedRawResult->model->id;
+		$resultYmModelDetailed->offerCount = $decodedRawResult->model->offerCount;
+		$resultYmModelDetailed->ymModelJsonRaw = $formatRawResult;
+		$resultYmModelDetailed->ymModelName = $decodedRawResult->model->name;
+		$resultYmModelDetailed->geoId = $regionId;
+		$resultYmModelDetailed->type = $decodedRawResult->model->type;
+
+		return $resultYmModelDetailed;
+	}
+
 	/**
+	 * @deprecated
 	 * Поиск модели яндекс-маркета по имени
 	 * @param $model mixed|YMModelDetailed
 	 * @return mixed|YMModel|YMModel[]
@@ -273,7 +315,7 @@ class YandexMarketApiService implements IYandexMarketApiService
 
 		$filtersStd = $this->FindFiltersByYMCategoryId($ymCategoryId, $ymGeoId);
 
-		if ($filtersStd->errors != null)
+		if (empty($filtersStd->errors) == false)
 			throw new Exception("Фильтры не найдены! " . implode('; ',$filtersStd->errors));
 
 		$url = "&";
@@ -349,16 +391,17 @@ class YandexMarketApiService implements IYandexMarketApiService
 
 		if (count($filters) != count($filtersDictionary)){
 
-			$requested = array_keys($filtersDictionary);
-			$found = $filters;
+			$requestedFilterArrImplode = implode(', ', array_map(
+				function ($v, $k) { return $k . '=' . $v; },
+				$filtersDictionary,
+				array_keys($filtersDictionary)
+			));
 
-			var_dump($requested);
-			var_dump($found);
+			$exceptionString = "Количество найденных фильтров не соответствует запрошенным!
+			Запрошенные ключи и значения - " . $requestedFilterArrImplode.
+				" . Фильтры в которых производится поиск в формате json - " . json_encode($filters);
 
-			$res = array_diff($found, $requested);
-
-			throw new Exception("Количество найденных фильтров не соответствует запрошенным!
-			Не найдены следующие ключи " . implode(',', $res));
+			throw new Exception($exceptionString);
 
 		}
 
